@@ -541,11 +541,19 @@
                 top: 104px;
                 left: 20px;
             }
+            /* La fenetre de detail se posait sur la rangee de cartes. Elle
+               remonte dans la zone vide entre la balance et la table, ou elle
+               ne masque plus rien. */
             #card-info {
-                width: 88%;
-                bottom: 74px;
-                padding: 16px;
+                width: 90%;
+                top: 156px;
+                bottom: auto;
+                padding: 14px 16px;
             }
+            #card-info #card-title { font-size: 1rem; margin-bottom: 6px; }
+            #card-info #card-desc { font-size: 0.78rem; margin-bottom: 8px; }
+            #card-info #card-effects { font-size: 0.72rem; }
+            #card-info #speech-stop-btn { margin-top: 8px; padding: 5px 12px; }
             #card-title {
                 font-size: 1.1rem;
             }
@@ -1349,8 +1357,10 @@
     </div>
 
     <!-- PANTHEON SELECTION OVERLAY -->
-    <div id="pantheon-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 115; backdrop-filter: blur(25px);">
-        <div class="stat-box" style="width: 90%; max-width: 800px; pointer-events: auto; display: flex; flex-direction: column;">
+    <!-- align-items: center centrait un contenu plus haut que l'ecran : le
+         debordement partait au-dessus du cadre et rien ne defilait. -->
+    <div id="pantheon-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: flex-start; z-index: 115; backdrop-filter: blur(25px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 0; box-sizing: border-box;">
+        <div class="stat-box" style="width: 90%; max-width: 800px; pointer-events: auto; display: flex; flex-direction: column; margin: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 30px;" data-i18n="select_pantheon">CHOISIR VOTRE PANTHÉON</h3>
             <div id="pantheon-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
                 <!-- Pantheon cards will be injected here -->

@@ -163,7 +163,13 @@ export class HomeController {
                         <div style="border-top: 1px solid rgba(255,255,255,0.1); padding-top: 10px; font-size: 0.7rem; display: flex; flex-wrap: wrap; gap: 10px;">
                             ${Object.entries(p.bonus).map(([k, v]) => {
                                 const sign = v > 0 ? '+' : '';
-                                return `<div style="color: ${v > 0 ? '#2ecc71' : (v < 0 ? '#e74c3c' : '#fff')}">${k.toUpperCase()}: ${sign}${v}</div>`;
+                                // Les cles brutes s'affichaient en anglais :
+                                // SPIRITUALITY, MONEY... On passe par les
+                                // libelles traduits.
+                                const nom = this.callbacks.getTranslation
+                                    ? this.callbacks.getTranslation(`pillar_${k}`)
+                                    : k;
+                                return `<div style="color: ${v > 0 ? '#2ecc71' : (v < 0 ? '#e74c3c' : '#fff')}">${nom} : ${sign}${v}</div>`;
                             }).join('')}
                         </div>
                         <button class="menu-btn gold" style="width: 100%; padding: 10px; font-size: 0.7rem;" data-id="${p.id}">Choisir</button>
