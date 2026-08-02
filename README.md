@@ -1,62 +1,68 @@
-# Rosie Component Library
+# ÉQUILIBRE DES CHOIX
 
-This folder contains pre-built Rosie components for Three.js games. Use them when they fit the request.
+**Chaque décision a des conséquences.**
 
-## Read Before Using
+Jeu de cartes stratégique en 3D. Le joueur construit la meilleure vie possible en maintenant l'équilibre entre quatre piliers de l'existence : **Spiritualité**, **Amour**, **Santé** et **Argent**.
 
-Use the `read` tool to load a component's source code before importing it.
+À chaque tour, trois cartes sont proposées. Chacune apporte un avantage et un sacrifice — il n'existe aucune carte parfaite. Les quatre piliers évoluent sur une échelle de 0 à 100 ; dès que l'un d'eux touche une borne, la partie s'arrête. Le score final récompense la faible dispersion entre les quatre valeurs : l'équilibre, pas l'excès.
 
-Example workflow:
-```javascript
-read(file_path="/rosie/controls/rosieControls.js")
-import { PlayerController } from './rosie/controls/rosieControls.js';
+Un projet **KHALAM**.
+
+---
+
+## Jouer
+
+Application web installable (PWA). Fonctionne hors connexion après la première visite, sur Android, iPhone, tablette et ordinateur.
+
+## Architecture
+
+Application modulaire en JavaScript natif (modules ES), rendu **Three.js**. Aucune étape de build : les fichiers sont servis tels quels.
+
+| Module | Rôle |
+|---|---|
+| `main.js` | Orchestration générale, boucle de partie |
+| `game-engine.js` | Logique pure : piliers, score, tirage, mécaniques |
+| `game-config.js` | Données : cartes, raretés, événements, trophées, héritage |
+| `scene-manager.js` | Scène Three.js, caméra, cadrage adaptatif |
+| `table-controller.js` | Table de jeu, piliers 3D, balance, éclairage |
+| `card-controller.js` | Génération et animation des cartes |
+| `vfx-controller.js` | Effets visuels et cinématiques |
+| `ui-controller.js` | Interface HTML, panneaux, réglages |
+| `audio-controller.js` | Musique et effets sonores |
+| `home-controller.js` | Écran d'accueil |
+| `persistence-controller.js` | Sauvegarde locale, statistiques, héritage |
+| `config-controller.js` | Options et localisation |
+| `narrative-controller.js` | Événements narratifs |
+| `transition-controller.js` | Transitions entre écrans |
+| `duel-controller.js` | Mode Duel (synchronisation temps réel) |
+
+Le moteur (`game-engine.js`) ne dépend d'aucun module de rendu : il est testable et simulable isolément.
+
+## Structure du dépôt
+
+```
+index.html          point d'entrée
+manifest.json       manifeste PWA
+sw.js               service worker (cache hors ligne)
+*.js                modules de jeu
+assets/             images, sons, modèles 3D, icônes
+AGENTS.md           bible du projet (vision, gameplay, direction artistique)
+tome_*.md           documentation détaillée par domaine
 ```
 
-## Available Components
+## Documentation
 
-### rosieControls.js (3D Games - Three.js)
+La conception est consignée dans les **Archives du Sanctuaire** — voir [`AGENTS.md`](./AGENTS.md) pour le sommaire complet : vision, gameplay, interface, direction artistique et sonore, architecture, bible des cartes, univers, progression.
 
-**Path:** `/rosie/controls/rosieControls.js`
-**Exports:** `PlayerController`, `ThirdPersonCameraController`, `FirstPersonCameraController`
+## Déploiement
 
-**What it does:**
-- WASD movement with camera-relative direction
-- Jumping, gravity, and ground detection
-- Third-person orbit camera or first-person pointer-lock camera
-- Automatic mobile controls through `rosieMobileControls.js`
+Le dépôt est servi directement par GitHub Pages depuis la branche principale. Le fichier `.nojekyll` désactive le traitement Jekyll, qui ignorerait sinon les chemins commençant par un tiret bas.
 
-Mobile controls render at `z-index: 50`, so place menus and overlays above that layer.
-Set `jumpForce: 0` for games without jumping; this omits the mobile Jump button.
+À chaque livraison, incrémenter `VERSION` dans `sw.js` — sans quoi les navigateurs continueront de servir la version en cache.
 
-**Use for:** 3D platformers, exploration games, and action games.
-**Avoid for:** racing, top-down, board, puzzle, or custom-control games where a purpose-built controller is simpler.
+## Lois du projet
 
-Quick example:
-```javascript
-const controller = new PlayerController(playerMesh, {
-  moveSpeed: 10,
-  jumpForce: 15,
-  groundLevel: 0
-});
-
-const cameraController = new ThirdPersonCameraController(
-  camera,
-  playerMesh,
-  renderer.domElement,
-  { distance: 7, height: 3 }
-);
-
-const rotation = cameraController.update();
-controller.update(deltaTime, rotation);
-```
-
-### rosieMobileControls.js (Internal)
-
-**Path:** `/rosie/controls/rosieMobileControls.js`
-**Note:** Imported by `rosieControls.js`; you usually do not import it directly.
-
-## Usage Rules
-
-- Read source with `read` before using a component.
-- Import from `./rosie/controls/...`.
-- Use `rosieControls.js` only for Three.js projects where the built-in movement/camera contract fits.
+- Ne jamais modifier le principe des quatre piliers.
+- Aucun choix n'est neutre ; aucune carte n'est parfaite.
+- L'équilibre prime sur l'excès.
+- La stabilité, la fluidité et la lisibilité passent avant les effets.

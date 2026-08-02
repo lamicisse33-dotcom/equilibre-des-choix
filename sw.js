@@ -1,4 +1,4 @@
-const VERSION = 'v4';
+const VERSION = 'v5';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Distant : mis en cache a la volee, jamais en precache (echec reseau = install KO)
@@ -22,7 +22,6 @@ const ASSETS = [
   './narrative-events.js',
   './persistence-controller.js',
   './scene-manager.js',
-  './sw.js',
   './table-controller.js',
   './transition-controller.js',
   './ui-controller.js',
@@ -62,6 +61,10 @@ const ASSETS = [
   './assets/icon-pillar-love-minimal.webp',
   './assets/icon-pillar-money-minimal.webp',
   './assets/icon-pillar-spirituality-minimal.webp',
+  './assets/icons/apple-touch-icon.png',
+  './assets/icons/icon-192.png',
+  './assets/icons/icon-512.png',
+  './assets/icons/icon-maskable-512.png',
   './assets/legendary_life_art.webp',
   './assets/legendary_love_art.webp',
   './assets/legendary_spirit_art.webp',
