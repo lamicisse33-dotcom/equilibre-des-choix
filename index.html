@@ -253,8 +253,20 @@
             z-index: 240;
             pointer-events: auto;
         }
-        #game-over > div {
-            max-width: 100%;
+        /* Tout enfant direct est contenu dans la largeur utile. Sans
+           box-sizing, le padding du bandeau de cause s'ajoutait a 100 % et le
+           cadre sortait de l'ecran par la droite. */
+        #game-over > * {
+            max-width: min(560px, 100%);
+            box-sizing: border-box;
+        }
+        #game-over p,
+        #game-over #game-over-cause {
+            overflow-wrap: break-word;
+            hyphens: auto;
+        }
+        #game-over #game-over-summary {
+            box-sizing: border-box;
         }
         /* La rangee de boutons passe a la ligne au lieu de deborder. */
         #game-over .actions-row {
@@ -548,7 +560,18 @@
                 letter-spacing: 4px;
             }
             #game-over {
-                padding: 30px 18px;
+                padding: 30px 16px;
+            }
+            /* Sur telephone, l'interlettrage etirait les phrases longues
+               jusqu'aux bords. */
+            #game-over p {
+                letter-spacing: 1px !important;
+                font-size: 0.9rem;
+            }
+            #game-over #game-over-cause {
+                letter-spacing: 1px;
+                font-size: 0.78rem !important;
+                padding: 10px 14px !important;
             }
         }
 
