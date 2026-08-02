@@ -541,19 +541,18 @@
                 top: 104px;
                 left: 20px;
             }
-            /* La fenetre de detail se posait sur la rangee de cartes. Elle
-               remonte dans la zone vide entre la balance et la table, ou elle
-               ne masque plus rien. */
+            /* La scene ayant ete remontee, la fenetre de detail retrouve le bas
+               de l'ecran : elle ne recouvre plus la rangee de cartes. */
             #card-info {
                 width: 90%;
-                top: 156px;
-                bottom: auto;
-                padding: 14px 16px;
+                top: auto;
+                bottom: 86px;
+                padding: 16px 18px;
             }
-            #card-info #card-title { font-size: 1rem; margin-bottom: 6px; }
-            #card-info #card-desc { font-size: 0.78rem; margin-bottom: 8px; }
-            #card-info #card-effects { font-size: 0.72rem; }
-            #card-info #speech-stop-btn { margin-top: 8px; padding: 5px 12px; }
+            #card-info #card-title { font-size: 1.05rem; margin-bottom: 8px; }
+            #card-info #card-desc { font-size: 0.82rem; margin-bottom: 10px; }
+            #card-info #card-effects { font-size: 0.75rem; }
+            #card-info #speech-stop-btn { margin-top: 10px; padding: 6px 14px; }
             #card-title {
                 font-size: 1.1rem;
             }
@@ -1157,7 +1156,7 @@
     </div>
 
     <!-- STATISTICS OVERLAY -->
-    <div id="stats-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 125; backdrop-filter: blur(20px);">
+    <div id="stats-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 125; backdrop-filter: blur(20px); pointer-events: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <div class="stat-box" style="width: 80%; max-width: 500px; pointer-events: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 30px;" data-i18n="statistics">STATISTIQUES GLOBALES</h3>
             
@@ -1189,7 +1188,7 @@
     </div>
 
     <!-- LEADERBOARD OVERLAY -->
-    <div id="leaderboard-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 126; backdrop-filter: blur(20px);">
+    <div id="leaderboard-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 126; backdrop-filter: blur(20px); pointer-events: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <div class="stat-box" style="width: 90%; max-width: 500px; max-height: 80vh; pointer-events: auto; display: flex; flex-direction: column;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 30px;" data-i18n="leaderboard">CLASSEMENT DES GARDIENS</h3>
             
@@ -1214,7 +1213,7 @@
     </div>
 
     <!-- MEMORIES OVERLAY -->
-    <div id="memories-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 120; backdrop-filter: blur(20px);">
+    <div id="memories-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 120; backdrop-filter: blur(20px); pointer-events: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <div class="stat-box" style="width: 80%; max-width: 600px; max-height: 80vh; overflow: hidden; display: flex; flex-direction: column; pointer-events: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 20px;" data-i18n="memories">GALERIE DES SOUVENIRS</h3>
             <div id="memories-list" style="flex: 1; overflow-y: auto; text-align: left; font-size: 0.8rem; margin-bottom: 25px; padding-right: 10px;">
@@ -1225,7 +1224,7 @@
     </div>
 
     <!-- HERITAGE OVERLAY -->
-    <div id="heritage-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 122; backdrop-filter: blur(25px);">
+    <div id="heritage-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: center; z-index: 122; backdrop-filter: blur(25px); pointer-events: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <div class="stat-box" style="width: 90%; max-width: 800px; max-height: 85vh; overflow: hidden; display: flex; flex-direction: column; pointer-events: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 10px;" data-i18n="heritage_tree">ARBRE D'HÉRITAGE</h3>
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; background: rgba(139, 92, 246, 0.1); padding: 10px 20px; border: 1px solid rgba(139, 92, 246, 0.3);">
@@ -1240,7 +1239,7 @@
     </div>
 
     <!-- CREDITS OVERLAY -->
-    <div id="credits-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 130; backdrop-filter: blur(20px);">
+    <div id="credits-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.9); display: flex; justify-content: center; align-items: center; z-index: 130; backdrop-filter: blur(20px); pointer-events: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <div class="stat-box" style="width: 80%; max-width: 500px; pointer-events: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 20px;" data-i18n="credits">CRÉDITS</h3>
             <div style="text-align: center; font-size: 0.85rem; line-height: 2;">
@@ -1346,7 +1345,7 @@
     </div>
 
     <!-- HISTORY OVERLAY (During Game) -->
-    <div id="history-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 50; backdrop-filter: blur(10px);">
+    <div id="history-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); display: flex; justify-content: center; align-items: center; z-index: 50; backdrop-filter: blur(10px); pointer-events: auto; overflow-y: auto; -webkit-overflow-scrolling: touch; overscroll-behavior: contain;">
         <div class="stat-box" style="width: 90%; max-width: 400px; pointer-events: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 20px;" data-i18n="history">HISTORIQUE DU CYCLE</h3>
             <div id="history-list" style="max-height: 60vh; overflow-y: auto; text-align: left; font-size: 0.75rem; margin-bottom: 25px;">
@@ -1359,8 +1358,14 @@
     <!-- PANTHEON SELECTION OVERLAY -->
     <!-- align-items: center centrait un contenu plus haut que l'ecran : le
          debordement partait au-dessus du cadre et rien ne defilait. -->
-    <div id="pantheon-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: flex; justify-content: center; align-items: flex-start; z-index: 115; backdrop-filter: blur(25px); overflow-y: auto; -webkit-overflow-scrolling: touch; padding: 24px 0; box-sizing: border-box;">
-        <div class="stat-box" style="width: 90%; max-width: 800px; pointer-events: auto; display: flex; flex-direction: column; margin: auto;">
+    <!-- Deux defauts empechaient tout defilement :
+         - align-items: center poussait le debordement au-dessus du cadre,
+           hors d'atteinte et sans barre ;
+         - l'overlay n'avait pas pointer-events: auto, donc aucun geste tactile
+           ne lui parvenait. Seule la boite interieure les recevait, et ce n'est
+           pas elle qui defile. -->
+    <div id="pantheon-overlay" class="hidden" style="position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.95); display: block; z-index: 115; backdrop-filter: blur(25px); pointer-events: auto; overflow-y: auto; overscroll-behavior: contain; -webkit-overflow-scrolling: touch; padding: 24px 12px; box-sizing: border-box;">
+        <div class="stat-box" style="width: 100%; max-width: 800px; pointer-events: auto; display: flex; flex-direction: column; margin: 0 auto; box-sizing: border-box;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px; margin-bottom: 30px;" data-i18n="select_pantheon">CHOISIR VOTRE PANTHÉON</h3>
             <div id="pantheon-list" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 20px; margin-bottom: 30px;">
                 <!-- Pantheon cards will be injected here -->
