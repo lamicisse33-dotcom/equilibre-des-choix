@@ -193,42 +193,11 @@ export class SceneManager {
             }
         };
         
-        this.textures = {
-            wood: this.textureLoader.load('assets/noble-wood-texture.webp'),
-            border: this.textureLoader.load('assets/gold-engraved-border.webp'),
-            cardBack: this.textureLoader.load('assets/card-back-texture-v2.webp'),
-            illustrations: {
-                spirituality: this.textureLoader.load('assets/spirituality_art.webp'),
-                love: this.textureLoader.load('assets/love_art.webp'),
-                health: this.textureLoader.load('assets/health_art.webp'),
-                money: this.textureLoader.load('assets/money_art.webp'),
-                harmony: this.textureLoader.load('assets/harmony_art.webp'),
-                event_eclipse: this.textureLoader.load('assets/event_eclipse_art.webp'),
-                event_festival: this.textureLoader.load('assets/event_festival_art.webp'),
-                event_gold_rush: this.textureLoader.load('assets/event_gold_rush_art.webp'),
-                event_spring: this.textureLoader.load('assets/event_spring_art.webp'),
-                legendary_spirit: this.textureLoader.load('assets/legendary_spirit_art.webp'),
-                legendary_love: this.textureLoader.load('assets/legendary_love_art.webp'),
-                legendary_wealth: this.textureLoader.load('assets/legendary_wealth_art.webp'),
-                legendary_life: this.textureLoader.load('assets/legendary_life_art.webp')
-            },
-            // Minimalist gold pillar icons (line-art, transparent) for the card header
-            pillarIcons: {
-                spirituality: this.textureLoader.load('assets/icon-pillar-spirituality-minimal.webp'),
-                love: this.textureLoader.load('assets/icon-pillar-love-minimal.webp'),
-                health: this.textureLoader.load('assets/icon-pillar-health-minimal.webp'),
-                money: this.textureLoader.load('assets/icon-pillar-money-minimal.webp')
-            }
-        };
-
-        this.textures.wood.colorSpace = THREE.SRGBColorSpace;
-        // La bordure doree de la table etait interpretee en lineaire, donc
-        // rendue terne. Les textures de carte (cardBack, illustrations) sont
-        // volontairement laissees telles quelles.
-        if (this.textures.border) this.textures.border.colorSpace = THREE.SRGBColorSpace;
-        this.textures.wood.wrapS = this.textures.wood.wrapT = THREE.RepeatWrapping;
-        this.textures.wood.repeat.set(2, 2);
-        
+        // Le gestionnaire DOIT etre installe avant le premier chargement.
+        // Il etait pose apres la creation des textures : servies par le cache
+        // du service worker, elles se resolvaient parfois avant que onLoad ne
+        // soit branche, et l'evenement ne se declenchait jamais. L'ecran de
+        // chargement restait alors fige, sans la moindre erreur a signaler.
         this.loadingManager.onLoad = () => {
             this.assetsLoaded = true;
             this.table = new TableController(this.scene, this.loader, this.textures);
@@ -272,6 +241,43 @@ export class SceneManager {
                 masquerChargement();
             }
         };
+
+        this.textures = {
+            wood: this.textureLoader.load('assets/noble-wood-texture.webp'),
+            border: this.textureLoader.load('assets/gold-engraved-border.webp'),
+            cardBack: this.textureLoader.load('assets/card-back-texture-v2.webp'),
+            illustrations: {
+                spirituality: this.textureLoader.load('assets/spirituality_art.webp'),
+                love: this.textureLoader.load('assets/love_art.webp'),
+                health: this.textureLoader.load('assets/health_art.webp'),
+                money: this.textureLoader.load('assets/money_art.webp'),
+                harmony: this.textureLoader.load('assets/harmony_art.webp'),
+                event_eclipse: this.textureLoader.load('assets/event_eclipse_art.webp'),
+                event_festival: this.textureLoader.load('assets/event_festival_art.webp'),
+                event_gold_rush: this.textureLoader.load('assets/event_gold_rush_art.webp'),
+                event_spring: this.textureLoader.load('assets/event_spring_art.webp'),
+                legendary_spirit: this.textureLoader.load('assets/legendary_spirit_art.webp'),
+                legendary_love: this.textureLoader.load('assets/legendary_love_art.webp'),
+                legendary_wealth: this.textureLoader.load('assets/legendary_wealth_art.webp'),
+                legendary_life: this.textureLoader.load('assets/legendary_life_art.webp')
+            },
+            // Minimalist gold pillar icons (line-art, transparent) for the card header
+            pillarIcons: {
+                spirituality: this.textureLoader.load('assets/icon-pillar-spirituality-minimal.webp'),
+                love: this.textureLoader.load('assets/icon-pillar-love-minimal.webp'),
+                health: this.textureLoader.load('assets/icon-pillar-health-minimal.webp'),
+                money: this.textureLoader.load('assets/icon-pillar-money-minimal.webp')
+            }
+        };
+
+        this.textures.wood.colorSpace = THREE.SRGBColorSpace;
+        // La bordure doree de la table etait interpretee en lineaire, donc
+        // rendue terne. Les textures de carte (cardBack, illustrations) sont
+        // volontairement laissees telles quelles.
+        if (this.textures.border) this.textures.border.colorSpace = THREE.SRGBColorSpace;
+        this.textures.wood.wrapS = this.textures.wood.wrapT = THREE.RepeatWrapping;
+        this.textures.wood.repeat.set(2, 2);
+        
     }
 
     onCardSelected(isNarrative) {
