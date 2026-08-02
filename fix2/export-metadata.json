@@ -1,0 +1,17 @@
+{
+  "name": "ÉQUILIBRE DES CHOIX",
+  "revisionLabel": "Fix missing translation function in HomeController callback",
+  "description": "ÉQUILIBRE est un jeu de cartes stratégique, apaisant et immersif, avec une sensation de “table prestigieuse”. Le joueur doit construire la meilleure vie possible en maintenant l’équilibre entre quatre piliers : Spiritualité (bleu profond), Amour (rose), Santé (vert) et Argent (or). À chaque tour, il observe des cartes proposées, en choisit une, puis ses effets modifient un ou plusieurs piliers : chaque carte apporte un avantage mais aussi un sacrifice, et il ne doit jamais exister de carte parfaite. Les piliers sont représentés par des valeurs numériques sur une échelle 0–100. La manche se termine en échec immédiat dès qu’un pilier franchit un seuil min/max. Le score final d’“équilibre” est calculé à partir de la dispersion des quatre valeurs (plus la dispersion est faible, meilleur est le résultat). L’expérience doit être rapide et fluide, avec un minimum d’écrans intermédiaires : une boucle simple centrée sur le choix de cartes, la mise à jour de la balance et la progression vers une fin de manche.",
+  "mode": "Universal",
+  "exportDate": "2026-08-02T01:18:04.517Z",
+  "rosebudBuiltInSplash": {
+    "present": true,
+    "version": 1
+  },
+  "assetCount": 58,
+  "assetTypes": [
+    "image",
+    "audio",
+    "model"
+  ]
+}
