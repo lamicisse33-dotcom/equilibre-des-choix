@@ -1,6 +1,7 @@
 # ÉQUILIBRE DES CHOIX
 
-**Chaque décision a des conséquences.**
+**Chaque décision a des conséquences.*jeu 
+*
 
 Jeu de cartes stratégique en 3D. Le joueur construit la meilleure vie possible en maintenant l'équilibre entre quatre piliers de l'existence : **Spiritualité**, **Amour**, **Santé** et **Argent**.
 
