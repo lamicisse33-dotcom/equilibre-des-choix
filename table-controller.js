@@ -311,21 +311,24 @@ export class TableController {
     createBalance() {
         // Balance (Scale mechanism). Pushed further back and lifted so it stands
         // as a backdrop behind the card play stage, never occluding the cards.
+        // Balance raccourcie : son mat montait si haut que le fleau passait
+        // derriere le bandeau superieur, ne laissant voir que les plateaux et
+        // les cables. Elle est reduite et rapprochee du plan de jeu.
         this.balanceBase = new THREE.Group();
-        this.balanceBase.position.set(0, 0.2, -5.5);
-        this.balanceBase.scale.setScalar(0.85);
+        this.balanceBase.position.set(0, 0.2, -4.6);
+        this.balanceBase.scale.setScalar(0.62);
         this.scene.add(this.balanceBase);
 
         // Vertical pillar for the scale
         const stand = new THREE.Mesh(
-            new THREE.CylinderGeometry(0.06, 0.1, 3.5),
+            new THREE.CylinderGeometry(0.06, 0.1, 2.4),
             new THREE.MeshStandardMaterial({ color: 0x111111, metalness: 1, roughness: 0.2 })
         );
-        stand.position.y = 1.75;
+        stand.position.y = 1.2;
         this.balanceBase.add(stand);
 
         this.balanceBeam = new THREE.Group();
-        this.balanceBeam.position.set(0, 3.2, 0);
+        this.balanceBeam.position.set(0, 2.25, 0);
         this.balanceBase.add(this.balanceBeam);
 
         // Horizontal beam

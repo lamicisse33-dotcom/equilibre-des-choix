@@ -28,7 +28,9 @@ export class SceneManager {
     // hauteur d'ecran, et son haut ne remonte jamais au-dessus de la seconde.
     // Une descente exprimee en fraction fixe de la hauteur visible faisait
     // sortir les cartes par le bas en paysage et sur grand ecran.
-    static BAS_CIBLE = 0.87;
+    // Remontee de la scene : le bord arriere de la table doit se poser plus
+    // haut, pour refermer l'espace vide entre elle et la balance.
+    static BAS_CIBLE = 0.84;
     static HAUT_MINI = 0.10;
     static HAUT_MINI_COURT = 0.22;     // laisse place au bandeau en paysage
     static BASE_LOOK_Y = 0.4;
