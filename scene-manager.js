@@ -176,7 +176,16 @@ export class SceneManager {
             console.error('Asset non charge :', url);
         };
 
+        // Trace de l'avancement : sans elle, un chargement bloque ne disait
+        // pas s'il avait echoue d'emblee ou cale en cours de route.
+        this.progression = { charges: 0, total: 0, enAttente: new Set() };
+        this.loadingManager.onStart = (url, itemsLoaded, itemsTotal) => {
+            this.progression.total = itemsTotal;
+        };
+
         this.loadingManager.onProgress = (url, itemsLoaded, itemsTotal) => {
+            this.progression.charges = itemsLoaded;
+            this.progression.total = itemsTotal;
             const progress = (itemsLoaded / itemsTotal) * 100;
             if (loadingBar) loadingBar.style.width = `${progress}%`;
             if (loadingHint && Math.random() > 0.8) {

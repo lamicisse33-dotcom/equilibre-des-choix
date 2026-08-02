@@ -309,15 +309,29 @@ class App {
             // que le joueur comprenne pourquoi. On le garde et on lui dit ce
             // qui se passe, plutot que de le laisser devant un ecran noir.
             const echecs = (this.scene && this.scene.erreursChargement) || [];
-            console.warn('Chargement incomplet.', echecs);
+            const p = (this.scene && this.scene.progression) || { charges: 0, total: 0 };
+            console.warn(`Chargement incomplet : ${p.charges}/${p.total} ressources.`, echecs);
             const hint = document.getElementById('loading-hint');
             if (hint) {
                 hint.style.opacity = '1';
                 hint.style.color = '#e74c3c';
-                hint.textContent = echecs.length
-                    ? `${echecs.length} ressource(s) indisponible(s) — verifiez votre connexion`
-                    : 'Chargement interrompu — verifiez votre connexion';
+                // Le message generique n'aidait ni le joueur ni le diagnostic.
+                // On indique combien de ressources sont passees : un 0/0 designe
+                // un blocage avant meme la premiere requete, un 12/45 un arret
+                // en cours de route.
+                let msg;
+                if (echecs.length) {
+                    msg = `${echecs.length} ressource(s) introuvable(s) — ${p.charges}/${p.total} chargees`;
+                } else if (!p.total) {
+                    msg = 'Aucune ressource demandee — rechargez la page';
+                } else {
+                    msg = `Chargement arrete a ${p.charges}/${p.total} — rechargez la page`;
+                }
+                hint.textContent = msg;
             }
+            // Un cache de service worker abime bloque le chargement sans lever
+            // d'erreur : on propose au joueur de repartir propre.
+            this.proposerReinitialisation();
             const barre = document.getElementById('loading-bar');
             if (barre) barre.style.background = '#e74c3c';
         }, 15000);
@@ -327,6 +341,10 @@ class App {
         // Start menu music on first interaction
         const startAudio = () => {
             this.audio.startMenuMusic();
+            // Meme contrainte que pour l'audio : Safari exige que la synthese
+            // vocale soit amorcee dans un geste de l'utilisateur.
+            this.ui.deverrouillerVoix?.();
+            this.ui.prechargerVoix?.();
             
             if (this.isMobile && document.documentElement.requestFullscreen) {
                 document.documentElement.requestFullscreen().catch(() => {});
@@ -406,6 +424,33 @@ class App {
         } else {
             this.ui.showRefreshButton(false);
         }
+    }
+
+    /** Bouton de secours : purge le cache hors-ligne et recharge. */
+    proposerReinitialisation() {
+        if (document.getElementById('reset-cache-btn')) return;
+        const b = document.createElement('div');
+        b.id = 'reset-cache-btn';
+        b.textContent = 'VIDER LE CACHE ET RECHARGER';
+        b.style.cssText = 'margin-top:26px;padding:10px 22px;border:1px solid #e74c3c;'
+            + 'color:#ff9d9d;font-family:var(--font-serif);font-size:0.68rem;'
+            + 'letter-spacing:2px;cursor:pointer;pointer-events:auto;background:rgba(60,10,10,0.5);';
+        b.addEventListener('click', async () => {
+            try {
+                if ('caches' in window) {
+                    const cles = await caches.keys();
+                    await Promise.all(cles.map(k => caches.delete(k)));
+                }
+                if (navigator.serviceWorker) {
+                    const regs = await navigator.serviceWorker.getRegistrations();
+                    await Promise.all(regs.map(r => r.unregister()));
+                }
+            } catch (e) {
+                console.warn('Purge partielle', e);
+            }
+            location.reload();
+        });
+        document.getElementById('loading-screen')?.appendChild(b);
     }
 
     async handleGameOver() {

@@ -1,4 +1,4 @@
-const VERSION = 'v21';
+const VERSION = 'v23';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -88,11 +88,17 @@ const ASSETS = [
 ];
 
 self.addEventListener('install', (event) => {
+  // Le precache ne bloque plus l'installation : 79 requetes lancees d'un coup
+  // saturaient le reseau d'un telephone et retardaient la prise de controle,
+  // laissant la page attendre ses textures. Il se poursuit en arriere-plan.
+  self.skipWaiting();
   event.waitUntil((async () => {
     const cache = await caches.open(CACHE_NAME);
-    // cache.addAll est atomique : un seul 404 annulerait tout le precache.
-    await Promise.all(ASSETS.map(u => cache.add(u).catch(e => console.warn('SW ignore', u, e))));
-    self.skipWaiting();
+    // Par lots de 6 : cache.addAll est atomique, un seul 404 annulerait tout.
+    for (let i = 0; i < ASSETS.length; i += 6) {
+      await Promise.all(ASSETS.slice(i, i + 6)
+        .map(u => cache.add(u).catch(e => console.warn('SW ignore', u, e))));
+    }
   })());
 });
 
@@ -115,7 +121,9 @@ self.addEventListener('fetch', (event) => {
     if (cached) return cached;
     try {
       const res = await fetch(req);
-      if (res && (res.ok || res.type === 'opaque') && (isCDN || url.origin === location.origin)) {
+      // Ne jamais archiver une reponse opaque : son statut est inconnu, et un
+      // echec reseau ainsi mis en cache serait resservi indefiniment.
+      if (res && res.ok && (isCDN || url.origin === location.origin)) {
         const cache = await caches.open(CACHE_NAME);
         cache.put(req, res.clone());
       }

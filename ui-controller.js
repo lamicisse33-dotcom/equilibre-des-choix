@@ -423,9 +423,27 @@ export class UIController {
      * dans AudioController sans que rien ne joue dessus : il pilote desormais
      * le volume de la synthese, et son curseur apparait dans les reglages.
      */
+    /**
+     * Deverrouillage de la synthese vocale. Safari, sur iPhone comme sur Mac,
+     * refuse de parler tant qu'un premier appel n'a pas eu lieu directement
+     * dans un geste de l'utilisateur. On emet un enonce vide au premier
+     * contact ; sans lui, tous les appels suivants restaient muets.
+     */
+    deverrouillerVoix() {
+        if (this.voixDeverrouillee || !('speechSynthesis' in window)) return;
+        this.voixDeverrouillee = true;
+        try {
+            const vide = new SpeechSynthesisUtterance(' ');
+            vide.volume = 0;
+            window.speechSynthesis.speak(vide);
+        } catch (e) {
+            console.warn('Synthese vocale indisponible', e);
+        }
+    }
+
     lireCarte(data) {
         if (!('speechSynthesis' in window) || !data) return;
-        this.arreterLecture();
+        this.deverrouillerVoix();
         if (this.lectureCoupee) return;
 
         const volume = this.volumeVoix ?? 0.5;
@@ -452,7 +470,33 @@ export class UIController {
 
         this.utteranceEnCours = u;
         this.montrerArret(true);
-        window.speechSynthesis.speak(u);
+
+        const synth = window.speechSynthesis;
+        // Safari se met parfois en pause de lui-meme et n'en sort pas seul.
+        if (synth.paused) synth.resume();
+
+        if (synth.speaking || synth.pending) {
+            // cancel() suivi d'un speak() immediat laisse Safari muet : il faut
+            // rendre la main au navigateur entre les deux.
+            synth.cancel();
+            setTimeout(() => {
+                if (this.utteranceEnCours === u && !this.lectureCoupee) synth.speak(u);
+            }, 120);
+        } else {
+            synth.speak(u);
+        }
+    }
+
+    /**
+     * La liste des voix est peuplee de facon asynchrone. On l'amorce des le
+     * demarrage pour qu'une voix francaise soit disponible au premier enonce.
+     */
+    prechargerVoix() {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.getVoices();
+        window.speechSynthesis.onvoiceschanged = () => {
+            window.speechSynthesis.getVoices();
+        };
     }
 
     arreterLecture() {
