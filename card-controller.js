@@ -39,6 +39,16 @@ export class CardController {
     // le tapis. On releve la rangee d'autant.
     static LIFT_Y = 0.284;
 
+    /**
+     * Gabarit de la rangee selon le ratio d'ecran. SceneManager s'appuie
+     * dessus pour calculer le cadrage : la regle doit rester identique a celle
+     * appliquee dans createCards, sinon l'optique et la disposition divergent.
+     */
+    static layoutFor(aspect) {
+        const portrait = aspect < 0.85;
+        return { spread: portrait ? 0.68 : 1.0, scale: portrait ? 0.92 : 1.0 };
+    }
+
     constructor(scene, textures) {
         this.scene = scene;
         this.textures = textures;
@@ -67,9 +77,10 @@ export class CardController {
         // horizontal spread pushes the side cards out of frame. Compress the
         // horizontal spacing and scale so all three cards stay fully visible.
         const aspect = window.innerWidth / window.innerHeight;
-        const isPortrait = aspect < 0.85;
-        const spreadFactor = isPortrait ? 0.68 : 1.0;
-        const cardScale = isPortrait ? 0.92 : 1.0;
+        // Source unique : la meme fonction sert au cadrage camera.
+        const layout = CardController.layoutFor(aspect);
+        const spreadFactor = layout.spread;
+        const cardScale = layout.scale;
 
         cardData.forEach((data, i) => {
             const baseSlot = slots[i] || new THREE.Vector3(0, 0, 0);

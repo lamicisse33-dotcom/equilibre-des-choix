@@ -1559,6 +1559,27 @@
     <audio id="game-over-sfx" src="assets/audio/game-over-chime-soft.mp3"></audio>
     <audio id="defeat-ambient" src="assets/audio/equilibre-defeat-calm-ambient.mp3" loop></audio>
 
+    <!-- Filet global : toute erreur au demarrage doit etre visible a l'ecran.
+         Sans lui, une exception dans un module laissait l'ecran de chargement
+         fige sans aucun message. -->
+    <script>
+        (function () {
+            const afficher = (msg) => {
+                const h = document.getElementById('loading-hint');
+                if (!h) return;
+                h.style.opacity = '1';
+                h.style.color = '#e74c3c';
+                h.textContent = String(msg).slice(0, 160);
+            };
+            window.addEventListener('error', (e) => {
+                afficher('Erreur : ' + (e.message || e.error));
+            });
+            window.addEventListener('unhandledrejection', (e) => {
+                afficher('Erreur : ' + (e.reason && e.reason.message ? e.reason.message : e.reason));
+            });
+        })();
+    </script>
+
     <script type="module" src="main.js"></script>
 
     <!-- sw.js existait dans le projet mais n'etait enregistre nulle part :

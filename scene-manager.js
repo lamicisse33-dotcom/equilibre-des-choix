@@ -199,6 +199,7 @@ export class SceneManager {
         // soit branche, et l'evenement ne se declenchait jamais. L'ecran de
         // chargement restait alors fige, sans la moindre erreur a signaler.
         this.loadingManager.onLoad = () => {
+          try {
             this.assetsLoaded = true;
             this.table = new TableController(this.scene, this.loader, this.textures);
             this.cardController = new CardController(this.scene, this.textures);
@@ -240,6 +241,25 @@ export class SceneManager {
             } else {
                 masquerChargement();
             }
+          } catch (err) {
+            // Une exception ici laissait l'ecran de chargement fige pour
+            // toujours, sans le moindre indice. On la montre, et on decouvre la
+            // scene malgre tout : mieux vaut un jeu incomplet qu'un ecran mort.
+            console.error('Erreur pendant la mise en place de la scene :', err);
+            const hint = document.getElementById('loading-hint');
+            if (hint) {
+                hint.style.opacity = '1';
+                hint.style.color = '#e74c3c';
+                hint.textContent = `Erreur : ${err && err.message ? err.message : err}`;
+            }
+            this.sceneReady = true;
+            if (loadingScreen) {
+                setTimeout(() => {
+                    loadingScreen.style.opacity = '0';
+                    setTimeout(() => loadingScreen.remove(), 800);
+                }, 4000);
+            }
+          }
         };
 
         this.textures = {
