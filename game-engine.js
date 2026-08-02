@@ -19,6 +19,11 @@ import {
 } from './game-config.js';
 
 export class GameEngine {
+    // Au-dela de ce tour, les effets cessent d'enfler. Sans ce plafond, une
+    // partie longue -- en particulier en mode Meditation, qui ne se termine
+    // jamais -- voyait tous les malus devenir des bonus.
+    static TOUR_PLAFOND = 60;
+
     constructor(stats = {}, heritage = { upgrades: {} }) {
         this.pillars = {};
         PILLARS.forEach(p => this.pillars[p] = INITIAL_PILLAR_VALUE);
@@ -251,7 +256,11 @@ export class GameEngine {
             this.recentScenarios.push(scenario.title);
             if (this.recentScenarios.length > 9) this.recentScenarios.shift();
 
-            const scale = 1 + (this.turn / 40); 
+            // L'echelle n'avait aucun plafond : au tour 224 elle valait 6.6 et
+            // les effets etaient multiplies par sept. Bornee a 2.5, atteinte au
+            // tour 60 -- au-dela, la difficulte vient des seuils, pas de
+            // l'inflation des chiffres.
+            const scale = 1 + Math.min(this.turn, GameEngine.TOUR_PLAFOND) / 40;
             const card = this.createCardFromScenario(scenario, scale);
             cards.push(card);
         }
@@ -278,7 +287,9 @@ export class GameEngine {
         
         for (const pillar in scenario.effects) {
             const base = scenario.effects[pillar];
-            const varianceRange = 4 + Math.floor(this.turn / 10);
+            // Meme plafond pour l'amplitude aleatoire : elle atteignait ±13 au
+            // tour 224, de quoi retourner n'importe quel sacrifice.
+            const varianceRange = 4 + Math.floor(Math.min(this.turn, GameEngine.TOUR_PLAFOND) / 10);
             const variance = Math.floor(this.seededRandom() * varianceRange) - Math.floor(varianceRange / 2);
             
             let multiplier = this.activeModifiers.multiplier;
@@ -292,7 +303,15 @@ export class GameEngine {
                 multiplier *= (1.0 + card.synergyStatus.bonus);
             }
             
-            card.effects[pillar] = Math.round((base + variance) * scale * multiplier);
+            let valeur = Math.round((base + variance) * scale * multiplier);
+
+            // La variance s'ajoute a la base : des qu'elle depassait la valeur
+            // d'un malus, le signe s'inversait et la carte rapportait ce
+            // qu'elle devait couter. Un sacrifice reste un sacrifice.
+            if (base > 0 && valeur < 1) valeur = 1;
+            else if (base < 0 && valeur > -1) valeur = -1;
+
+            card.effects[pillar] = valeur;
         }
         return card;
     }

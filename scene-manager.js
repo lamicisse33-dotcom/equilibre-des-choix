@@ -17,10 +17,23 @@ export class SceneManager {
     static MIN_FOV = 45;      // cadrage d'origine, conserve sur desktop
     static MIN_FOV_COURT = 30; // ecran bas (telephone couche) : on resserre
     static MAX_FOV = 58;      // au-dela la perspective se deforme
-    static PART_HAUTEUR = 0.78; // part maximale de la hauteur occupee par une carte
+    static PART_HAUTEUR = 0.78;        // part maximale de la hauteur d'une carte
+    // Sur ecran bas, la rangee occupait 83 % de la hauteur : il ne restait
+    // aucune bande pour le bandeau superieur, qui se posait sur les cartes.
+    static PART_HAUTEUR_COURT = 0.66;
     // Rapprochement a la selection, en fraction de la distance au point de vise.
     static APPROCHE = 0.96;
     static APPROCHE_NARRATIVE = 0.94;
+    // Composition visee : le bas de la rangee se pose sur cette fraction de la
+    // hauteur d'ecran, et son haut ne remonte jamais au-dessus de la seconde.
+    // Une descente exprimee en fraction fixe de la hauteur visible faisait
+    // sortir les cartes par le bas en paysage et sur grand ecran.
+    static BAS_CIBLE = 0.87;
+    static HAUT_MINI = 0.10;
+    static HAUT_MINI_COURT = 0.22;     // laisse place au bandeau en paysage
+    static BASE_LOOK_Y = 0.4;
+    // Avancee de la rangee vers le joueur (voir TableController.cardSlots).
+    static AVANCEE = 1.2;
 
     /**
      * Ecartement de base entre deux cartes pour une main de n cartes.
@@ -435,11 +448,15 @@ export class SceneManager {
                      / SceneManager.APPROCHE_NARRATIVE;
         const look = VFXController.PLAY_LOOK;
 
+        // La rangee n'est plus au point de vise mais AVANCEE unites devant :
+        // c'est a cette distance-la que la largeur doit tenir.
         let dist = SceneManager.BASE_DIST;
-        let fov = THREE.MathUtils.radToDeg(Math.atan(besoin / (dist * aspect)) * 2);
+        let fov = THREE.MathUtils.radToDeg(
+            Math.atan(besoin / ((dist - SceneManager.AVANCEE) * aspect)) * 2);
         if (fov > SceneManager.MAX_FOV) {
             fov = SceneManager.MAX_FOV;
-            dist = besoin / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect);
+            dist = besoin / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect)
+                 + SceneManager.AVANCEE;
         }
 
         // Telephone couche : l'ecran est tres large mais tres bas. Le plancher
@@ -451,11 +468,23 @@ export class SceneManager {
 
         // Garde verticale : une carte ne doit jamais depasser 78 % de la
         // hauteur visible, sinon elle sort du cadre par le haut ou le bas.
-        const hauteurCarte = CardController.CARD_H * 0.887; // raccourci de perspective
-        const hauteurVisible = 2 * dist * Math.tan(THREE.MathUtils.degToRad(fov / 2));
-        if (hauteurCarte > hauteurVisible * SceneManager.PART_HAUTEUR) {
-            const tanMin = hauteurCarte / (SceneManager.PART_HAUTEUR * 2 * dist);
-            fov = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(tanMin) * 2));
+        // La rangee est AVANCEE unites devant le point de vise : c'est a cette
+        // distance-la qu'il faut mesurer sa taille apparente. Mesuree depuis le
+        // point de vise, la carte paraissait plus petite qu'en realite et la
+        // garde ne se declenchait jamais.
+        // La carte est inclinee : son bord bas est bien plus proche de l'oeil
+        // que son bord haut. Un simple rapport hauteur / hauteur visible
+        // sous-estimait donc largement son emprise reelle. On mesure la
+        // projection et on elargit le champ jusqu'a ce qu'elle rentre.
+        const part = ecranBas ? SceneManager.PART_HAUTEUR_COURT : SceneManager.PART_HAUTEUR;
+        for (let i = 0; i < 5; i++) {
+            const emprise = this.empriseRangee(fov, dist);
+            if (emprise === null || emprise <= part) break;
+            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / part);
+            const nouveau = Math.min(SceneManager.MAX_FOV,
+                                     THREE.MathUtils.radToDeg(Math.atan(t) * 2));
+            if (nouveau <= fov + 0.01) break;
+            fov = nouveau;
         }
 
         this.camera.fov = fov;
@@ -464,6 +493,12 @@ export class SceneManager {
 
         // Meme axe de vise, a la distance calculee. PLAY_POS est lu par spread
         // au moment des tweens : le muter suffit a recaler intro et resets.
+        // La camera et le point de vise descendent ensemble : le regard se
+        // translate sans changer l'angle, et toute la scene descend a l'ecran.
+        // On cherche la translation qui pose le bas de la rangee sur BAS_CIBLE,
+        // sans jamais faire sortir son haut par le dessus.
+        look.y = SceneManager.BASE_LOOK_Y + this.calculerDescente(fov, dist);
+
         const ratio = dist / SceneManager.BASE_DIST;
         const pos = VFXController.PLAY_POS;
         pos.y = look.y + SceneManager.BASE_OFFSET.y * ratio;
@@ -472,6 +507,90 @@ export class SceneManager {
         if (this.defaultCameraPos) {
             this.defaultCameraPos.set(pos.x, pos.y, pos.z);
         }
+    }
+
+    /**
+     * Position verticale d'un point a l'ecran, 0 en haut, 1 en bas.
+     * Camera et cible sont sur l'axe x = 0 : la projection se resout dans le
+     * plan YZ, sans passer par une matrice.
+     */
+    static projeterY(py, pz, cy, cz, ly, lz, fov) {
+        let fy = ly - cy, fz = lz - cz;
+        const n = Math.hypot(fy, fz); fy /= n; fz /= n;
+        const uy = -fz, uz = fy;              // normale montante dans le plan YZ
+        const dy = py - cy, dz = pz - cz;
+        const zc = dy * fy + dz * fz;
+        const yc = dy * uy + dz * uz;
+        if (zc <= 0.001) return null;
+        return (1 - (yc / zc) / Math.tan(THREE.MathUtils.degToRad(fov / 2))) / 2;
+    }
+
+    /** Bornes verticales de la rangee a l'ecran, pour un champ et une distance. */
+    bornesRangee(fov, dist, descente) {
+        const l = CardController.layoutFor(window.innerWidth / window.innerHeight);
+        const demi = (CardController.CARD_H * l.scale) / 2;
+        const slot = this.table ? this.table.getCardSlot(1) : { y: 1.0, z: 4.1 };
+        const yc = slot.y + CardController.LIFT_Y, zc = slot.z;
+        const inc = 0.55;
+        const ratio = dist / SceneManager.BASE_DIST;
+        const ly = SceneManager.BASE_LOOK_Y + descente;
+        const cy = ly + SceneManager.BASE_OFFSET.y * ratio;
+        const cz = 2.4 + SceneManager.BASE_OFFSET.z * ratio;
+        const haut = SceneManager.projeterY(yc + demi * Math.sin(inc), zc - demi * Math.cos(inc), cy, cz, ly, 2.4, fov);
+        const bas = SceneManager.projeterY(yc - demi * Math.sin(inc), zc + demi * Math.cos(inc), cy, cz, ly, 2.4, fov);
+        return (haut === null || bas === null) ? null : { haut, bas };
+    }
+
+    /** Part de la hauteur d'ecran reellement occupee par une carte. */
+    empriseRangee(fov, dist) {
+        const b = this.bornesRangee(fov, dist, 0);
+        return b === null ? null : (b.bas - b.haut);
+    }
+
+    /** Translation verticale a appliquer au regard, par recherche dichotomique. */
+    calculerDescente(fov, dist) {
+        const l = CardController.layoutFor(window.innerWidth / window.innerHeight);
+        const demi = (CardController.CARD_H * l.scale) / 2;
+        const slot = this.table ? this.table.getCardSlot(1) : { y: 1.0, z: 4.1 };
+        const yc = slot.y + CardController.LIFT_Y, zc = slot.z;
+        const inc = 0.55;                      // REST_TILT depuis l'horizontale
+        const basY = yc - demi * Math.sin(inc), basZ = zc + demi * Math.cos(inc);
+        const hautY = yc + demi * Math.sin(inc), hautZ = zc - demi * Math.cos(inc);
+        const ratio = dist / SceneManager.BASE_DIST;
+
+        const ecran = (d, py, pz) => {
+            const ly = SceneManager.BASE_LOOK_Y + d;
+            const cy = ly + SceneManager.BASE_OFFSET.y * ratio;
+            const cz = 2.4 + SceneManager.BASE_OFFSET.z * ratio;
+            return SceneManager.projeterY(py, pz, cy, cz, ly, 2.4, fov);
+        };
+
+        // La translation peut etre negative : en paysage la rangee, avancee
+        // vers le joueur, descend deja trop bas et il faut relever le regard.
+        let lo = -8, hi = 12;
+        for (let i = 0; i < 28; i++) {
+            const m = (lo + hi) / 2;
+            const v = ecran(m, basY, basZ);
+            if (v === null || v < SceneManager.BAS_CIBLE) lo = m; else hi = m;
+        }
+        let d = lo;
+
+        // Seconde borne : la translation minimale pour que le haut de la rangee
+        // reste visible. Augmenter d descend le contenu, donc cette contrainte
+        // est un plancher, pas un plafond. Un simple decrement partait en
+        // fuite lorsque les deux cibles etaient inconciliables.
+        let lo2 = -8, hi2 = 12;
+        for (let i = 0; i < 28; i++) {
+            const m = (lo2 + hi2) / 2;
+            const h = ecran(m, hautY, hautZ);
+            const mini = window.innerHeight < 500
+                ? SceneManager.HAUT_MINI_COURT : SceneManager.HAUT_MINI;
+            if (h === null || h < mini) lo2 = m; else hi2 = m;
+        }
+
+        // Si les deux cibles s'excluent -- ecran trop bas pour la hauteur de la
+        // rangee -- la visibilite complete l'emporte sur la position basse.
+        return Math.max(d, hi2);
     }
 
     onResize() {

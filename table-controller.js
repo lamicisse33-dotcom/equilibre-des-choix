@@ -15,9 +15,11 @@ export class TableController {
         // surface (y≈1.0) so the elevated camera reads all three faces clearly.
         // This is the guaranteed "table de jeu" zone — centered and always full.
         this.cardSlots = [
-            new THREE.Vector3(-2.15, 1.0, 2.9),
-            new THREE.Vector3(0, 1.0, 2.9),
-            new THREE.Vector3(2.15, 1.0, 2.9)
+            // Rangee avancee de 1.2 vers le joueur : elle occupait le tiers
+            // median de l'ecran en laissant une large bande vide en dessous.
+            new THREE.Vector3(-2.15, 1.0, 4.1),
+            new THREE.Vector3(0, 1.0, 4.1),
+            new THREE.Vector3(2.15, 1.0, 4.1)
         ];
         
         this.init();
@@ -92,7 +94,9 @@ export class TableController {
      */
     buildPlayStage() {
         const stage = new THREE.Group();
-        stage.position.set(0, 0.62, 2.55);
+        // Le tapis suit la rangee : sans cela les cartes flotteraient
+        // au-dela de son bord avant.
+        stage.position.set(0, 0.62, 3.75);
         // Lay the mat nearly flat but tilted slightly toward the camera so its
         // surface and slots are clearly visible from the play framing.
         stage.rotation.x = -Math.PI * 0.5 + 0.32;
@@ -457,6 +461,6 @@ export class TableController {
     }
 
     getCardSlot(index) {
-        return this.cardSlots[index] || new THREE.Vector3(0, 1.0, 2.9);
+        return this.cardSlots[index] || new THREE.Vector3(0, 1.0, 4.1);
     }
 }

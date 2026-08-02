@@ -406,6 +406,7 @@ export class UIController {
             }
         }
 
+        this.dernierPillars = gameState.pillars;
         this.majPeril(gameState.pillars);
 
         if (this.elements.dangerVignette) {
@@ -504,7 +505,11 @@ export class UIController {
             const d = v < 20 ? (20 - v) : (v > 80 ? (v - 80) : 0);
             if (d > ecart) { ecart = d; pire = p; haut = v > 80; }
         }
-        if (!pire) {
+        // Masquee tant que le detail d'une carte est ouvert : les deux se
+        // superposaient au centre de l'ecran.
+        const detailOuvert = this.elements.cardInfo
+            && !this.elements.cardInfo.classList.contains('hidden');
+        if (!pire || detailOuvert) {
             this.elements.perilAlert.classList.add('hidden');
             return;
         }
@@ -522,6 +527,8 @@ export class UIController {
         if (!data) {
             this.arreterLecture();
             this.elements.cardInfo.classList.add('hidden');
+            // Le detail se referme : le rappel de peril peut reprendre sa place.
+            if (this.dernierPillars) this.majPeril(this.dernierPillars);
             this.elements.cardInfo.style.borderColor = 'var(--gold)';
             this.elements.cardInfo.style.animation = 'none';
             if (this.elements.synergyStatus) this.elements.synergyStatus.classList.add('hidden');
