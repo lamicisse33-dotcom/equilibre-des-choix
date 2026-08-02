@@ -259,7 +259,7 @@ export class CardController {
         ctx.letterSpacing = '0px';
 
         // --- 3. ILLUSTRATION (framed window) ---
-        const artX = 52, artY = 142, artW = 408, artH = 250;
+        const artX = 52, artY = 136, artW = 408, artH = 244;
         ctx.save();
         this.roundRectPath(ctx, artX, artY, artW, artH, 12);
         ctx.fillStyle = '#070707';

@@ -18,6 +18,9 @@ export class SceneManager {
     static MIN_FOV_COURT = 30; // ecran bas (telephone couche) : on resserre
     static MAX_FOV = 58;      // au-dela la perspective se deforme
     static PART_HAUTEUR = 0.78; // part maximale de la hauteur occupee par une carte
+    // Rapprochement a la selection, en fraction de la distance au point de vise.
+    static APPROCHE = 0.96;
+    static APPROCHE_NARRATIVE = 0.94;
 
     /**
      * Ecartement de base entre deux cartes pour une main de n cartes.
@@ -252,10 +255,19 @@ export class SceneManager {
     onCardSelected(isNarrative) {
         if (!this.vfx || !this.defaultCameraPos) return;
 
-        // Gentle push-in from the play position toward the selected card.
-        const targetPos = isNarrative ? 
-            { x: 0, y: 3.9, z: 7.2 } : 
-            { x: 0, y: 4.0, z: 7.6 };
+        // Le rapprochement etait code en dur (z: 7.6) et ignorait le cadrage
+        // adaptatif. Sur telephone la camera partait de z 9.8 et sautait a 7.6,
+        // soit un zoom de 25 % : les deux cartes laterales sortaient du cadre.
+        // Il est desormais exprime en fraction de la distance au point de vise,
+        // et la reserve prise dans applyPlayFraming garantit que la rangee
+        // reste entiere.
+        const look = VFXController.PLAY_LOOK;
+        const f = isNarrative ? SceneManager.APPROCHE_NARRATIVE : SceneManager.APPROCHE;
+        const targetPos = {
+            x: this.defaultCameraPos.x,
+            y: look.y + (this.defaultCameraPos.y - look.y) * f,
+            z: look.z + (this.defaultCameraPos.z - look.z) * f
+        };
 
         new TWEEN.Tween(this.camera.position)
             .to(targetPos, 450)
@@ -416,7 +428,11 @@ export class SceneManager {
     applyPlayFraming(nbCartes = this._nbCartes || 3) {
         this._nbCartes = nbCartes;
         const aspect = window.innerWidth / window.innerHeight;
-        const besoin = SceneManager.halfWidthNeeded(aspect, nbCartes);
+        // La rangee doit tenir y compris pendant le rapprochement declenche par
+        // une selection : sans cette reserve, la camera avancait dans un cadre
+        // deja juste et rognait les cartes laterales.
+        const besoin = SceneManager.halfWidthNeeded(aspect, nbCartes)
+                     / SceneManager.APPROCHE_NARRATIVE;
         const look = VFXController.PLAY_LOOK;
 
         let dist = SceneManager.BASE_DIST;

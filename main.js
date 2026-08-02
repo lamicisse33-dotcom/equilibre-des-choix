@@ -79,7 +79,14 @@ class App {
                 await this.transition.fade(0, 800);
                 
                 this.scene.playIntro(() => {
-                    this.startNewTurn();
+                    // Initiation : trois messages avant la premiere main, une
+                    // seule fois dans la vie du joueur.
+                    if (!this.persistence.getStats().gamesPlayed && !this.initiationFaite) {
+                        this.initiationFaite = true;
+                        this.ui.lancerInitiation(() => this.startNewTurn());
+                    } else {
+                        this.startNewTurn();
+                    }
                 });
             },
             onDuel: async () => {
@@ -282,6 +289,9 @@ class App {
             this.scene.updateHeritage(this.persistence.getStats().totalLegacy);
             this.home.updateContinueButton(false);
         }
+
+        // Menu allege et initiation tant qu'aucune partie n'a ete terminee.
+        this.home.appliquerModeDecouverte(this.persistence.getStats().gamesPlayed);
         
         this.setupPointerEvents();
         this.setupKeyboardEvents();
@@ -331,6 +341,9 @@ class App {
 
     registerVisibilityHandler() {
         document.addEventListener('visibilitychange', () => {
+            // La synthese vocale continue de parler dans un onglet en fond :
+            // on la coupe explicitement.
+            if (document.visibilityState === 'hidden') this.ui.arreterLecture?.();
             if (document.visibilityState === 'hidden') {
                 this.persistence.saveGameProgress({
                     ...this.engine,
@@ -396,6 +409,8 @@ class App {
     }
 
     async handleGameOver() {
+        // Une partie terminee ouvre le menu complet.
+        this.home.appliquerModeDecouverte(this.persistence.getStats().gamesPlayed + 1);
         const isNewRecord = this.engine.score >= this.engine.highScore && this.engine.score > 0;
         
         // Sync Duel score

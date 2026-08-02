@@ -164,29 +164,29 @@ export class TableController {
         if (!this.tableMeshes) return;
         
         // Materials change based on legacy
-        let color = 0x2a1a0f; // Wood
-        let metalness = 0.1;
-        let roughness = 0.1;
+        let color = 0x3a2414; // Bois
+        let metalness = 0.0;
+        let roughness = 0.62;
         let spotIntensity = 15;
         
         if (totalLegacy > 1000) {
-            color = 0x1a1a1a; // Obsidian/Stone
-            metalness = 0.4;
-            roughness = 0.05;
+            color = 0x1a1a1a; // Obsidienne
+            metalness = 0.35;
+            roughness = 0.28;
             spotIntensity = 20;
         }
         
         if (totalLegacy > 5000) {
-            color = 0x444444; // Silver/Chrome
-            metalness = 0.9;
-            roughness = 0.01;
+            color = 0x444444; // Argent
+            metalness = 0.88;
+            roughness = 0.16;
             spotIntensity = 25;
         }
         
         if (totalLegacy > 15000) {
-            color = 0xd4af37; // Gold
-            metalness = 1.0;
-            roughness = 0.1;
+            color = 0xd4af37; // Or
+            metalness = 0.95;
+            roughness = 0.24;
             spotIntensity = 30;
         }
 
@@ -210,11 +210,15 @@ export class TableController {
             table.traverse(c => {
                 if (c.isMesh) {
                     c.receiveShadow = c.castShadow = true;
-                    c.material = new THREE.MeshStandardMaterial({ 
-                        map: this.textures.wood, 
-                        color: 0x2a1a0f, 
-                        roughness: 0.1,
-                        metalness: 0.1
+                    // roughness 0.1 sur du bois : la table se comportait comme
+                    // un miroir. metalness 0.1 sur un materiau non metallique
+                    // assombrit la diffuse sans rien apporter.
+                    c.material = new THREE.MeshStandardMaterial({
+                        map: this.textures.wood,
+                        color: 0x3a2414,
+                        roughness: 0.62,
+                        metalness: 0.0,
+                        roughnessMap: this.textures.wood
                     });
                     this.tableMeshes.push(c);
                 }
@@ -222,11 +226,14 @@ export class TableController {
             this.scene.add(table);
 
             const borderGeo = new THREE.BoxGeometry(10.5, 0.1, 7.5);
-            const borderMat = new THREE.MeshStandardMaterial({ 
-                color: 0xc5a059, 
-                metalness: 1, 
-                roughness: 0.1,
-                map: this.textures.border || null
+            // Chrome pur : la gravure de la bordure etait illisible.
+            const borderMat = new THREE.MeshStandardMaterial({
+                color: 0xc5a059,
+                metalness: 0.92,
+                roughness: 0.34,
+                map: this.textures.border || null,
+                emissive: 0x2a1c06,
+                emissiveIntensity: 0.3
             });
             const border = new THREE.Mesh(borderGeo, borderMat);
             border.position.y = 0.05;
@@ -240,11 +247,14 @@ export class TableController {
             rocks.scale.set(1.4, 1.4, 1.4);
             rocks.traverse(c => { 
                 if(c.isMesh) {
-                    c.material = new THREE.MeshStandardMaterial({ 
-                        color: 0x050505, 
-                        roughness: 0.05, 
-                        metalness: 0.8
-                    }); 
+                    // roughness 0.05 / metalness 0.8 : des galets chromes.
+                    c.material = new THREE.MeshStandardMaterial({
+                        color: 0x141418,
+                        roughness: 0.88,
+                        metalness: 0.04
+                    });
+                    c.castShadow = false;
+                    c.receiveShadow = true; 
                 }
             });
             this.scene.add(rocks);
@@ -403,16 +413,25 @@ export class TableController {
         }
 
         // Calculate balance tilt: split pillars in two halves
+        // La balance opposait deux groupes fixes : Spiritualite + Amour contre
+        // Sante + Argent. Un etat 95 / 5 / 95 / 5 -- joueur au bord de la mort,
+        // dispersion maximale -- s'affichait donc parfaitement horizontal.
+        // Elle mesure desormais l'ecart entre le pilier le plus haut et le plus
+        // bas, exactement ce dont depend la survie et le score, et penche du
+        // cote du pilier le plus faible.
         const pillarIds = Object.keys(PILLAR_DEFINITIONS);
-        const mid = Math.ceil(pillarIds.length / 2);
-        const leftPillars = pillarIds.slice(0, mid);
-        const rightPillars = pillarIds.slice(mid);
+        const valeurs = pillarIds.map(id => pillars[id] || 0);
+        const haut = Math.max(...valeurs);
+        const bas = Math.min(...valeurs);
+        const ecart = haut - bas;
 
-        const leftWeight = leftPillars.reduce((sum, id) => sum + (pillars[id] || 0), 0);
-        const rightWeight = rightPillars.reduce((sum, id) => sum + (pillars[id] || 0), 0);
-        
-        const weightDiff = (leftWeight / leftPillars.length) - (rightWeight / rightPillars.length);
-        const tilt = (weightDiff / 100) * (Math.PI / 8);
+        // Sens de l'inclinaison : le plateau du pilier le plus faible descend.
+        // Les deux premiers piliers sont a gauche, les deux derniers a droite.
+        const mid = Math.ceil(pillarIds.length / 2);
+        const indexFaible = valeurs.indexOf(bas);
+        const sens = indexFaible < mid ? 1 : -1;
+
+        const tilt = sens * (ecart / 100) * (Math.PI / 7);
         
         new TWEEN.Tween(this.balanceBeam.rotation).to({ z: tilt }, 1500).easing(TWEEN.Easing.Cubic.InOut).start();
         

@@ -46,7 +46,19 @@ export class HomeController {
             this.elements.dateDisplay.textContent = `${now.getDate().toString().padStart(2, '0')}/${(now.getMonth()+1).toString().padStart(2, '0')}`;
         }
 
-        this.elements.newGameBtn?.addEventListener('click', () => this.showPantheonSelection(false));
+        this.elements.newGameBtn?.addEventListener('click', () => {
+            // Premiere partie : on lance directement avec le pantheon neutre.
+            // Demander un choix strategique entre quatre pantheons avant que le
+            // joueur ait vu une seule carte n'a aucun sens.
+            if (this.premiereFois) {
+                import('./game-config.js').then(m => {
+                    const neutre = m.PANTHEONS.find(p => p.id === 'balanced') || m.PANTHEONS[0];
+                    this.callbacks.onPlay(false, neutre, false);
+                });
+                return;
+            }
+            this.showPantheonSelection(false);
+        });
         this.elements.meditationBtn?.addEventListener('click', () => this.showPantheonSelection(true));
         this.elements.duelBtn?.addEventListener('click', () => this.callbacks.onDuel());
         this.elements.continueBtn?.addEventListener('click', () => this.callbacks.onPlay(true));
@@ -291,6 +303,18 @@ export class HomeController {
                 });
             });
         });
+    }
+
+    /**
+     * Menu allege pour un nouveau venu. Duel, Heritage, Classement, Galerie,
+     * Statistiques et Meditation n'ont aucun sens avant d'avoir joue : ils
+     * apparaissent une fois la premiere partie terminee.
+     */
+    appliquerModeDecouverte(gamesPlayed) {
+        this.premiereFois = !gamesPlayed;
+        [this.elements.duelBtn, this.elements.heritageBtn, this.elements.leaderboardBtn,
+         this.elements.memoriesBtn, this.elements.statsBtn, this.elements.meditationBtn]
+            .forEach(b => { if (b) b.style.display = this.premiereFois ? 'none' : ''; });
     }
 
     updateContinueButton(hasProgress) {

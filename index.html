@@ -236,18 +236,43 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.95);
+            background: rgba(0, 0, 0, 0.97);
             display: flex;
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            /* Sans marge ni centrage du texte, le titre et la liste sortaient
+               par la gauche en portrait, et la rangee de boutons debordait des
+               deux cotes. */
+            padding: 40px 24px;
+            text-align: center;
+            gap: 4px;
+            overflow-y: auto;
+            /* Passe au-dessus des jauges de piliers, qui restaient visibles
+               au travers de l'ecran de fin. */
+            z-index: 240;
             pointer-events: auto;
+        }
+        #game-over > div {
+            max-width: 100%;
+        }
+        /* La rangee de boutons passe a la ligne au lieu de deborder. */
+        #game-over .actions-row {
+            display: flex;
+            gap: 14px;
+            margin-top: 30px;
+            flex-wrap: wrap;
+            justify-content: center;
         }
 
         #game-over h2 {
             font-family: var(--font-serif);
-            font-size: 4rem;
+            /* 4rem debordait sur telephone : la taille suit desormais la
+               largeur disponible. */
+            font-size: clamp(1.9rem, 8vw, 4rem);
+            line-height: 1.1;
+            max-width: 100%;
+            overflow-wrap: break-word;
             color: var(--gold);
             margin-bottom: 10px;
             letter-spacing: 10px;
@@ -377,7 +402,9 @@
 
         #settings-panel {
             position: absolute;
-            top: 40px;
+            /* Etait a top 40 / left 40, c'est-a-dire exactement sur la boite
+               TOUR du bandeau superieur. Descendu sous le bandeau. */
+            top: 132px;
             left: 40px;
             pointer-events: auto;
             display: flex;
@@ -462,18 +489,45 @@
             #ui-overlay {
                 padding: 20px;
             }
+            /* La colonne verticale de piliers, centree a droite, tombait pile
+               sur la troisieme carte. En portrait elle passe en bandeau
+               horizontal sous les cartes. */
             .pillars-container {
-                right: 20px;
-                gap: 15px;
-                padding: 15px 10px;
+                flex-direction: row;
+                right: auto;
+                top: auto;
+                bottom: 14px;
+                left: 50%;
+                transform: translateX(-50%);
+                gap: 18px;
+                padding: 10px 18px;
+                border-radius: 30px;
+            }
+            .pillar-item {
+                flex-direction: row;
+                gap: 8px;
+                align-items: center;
             }
             .pillar-bar {
-                height: 60px;
+                width: 46px;
+                height: 7px;
+                margin-top: 0;
+            }
+            /* ui-controller pose height ET width en ligne : on impose la
+               hauteur pleine pour que la barre se remplisse horizontalement. */
+            .pillar-fill, .pillar-preview {
+                height: 100% !important;
+                bottom: 0;
+                left: 0;
+            }
+            #settings-panel {
+                top: 104px;
+                left: 20px;
             }
             #card-info {
-                width: 85%;
-                bottom: 40px;
-                padding: 20px;
+                width: 88%;
+                bottom: 74px;
+                padding: 16px;
             }
             #card-title {
                 font-size: 1.1rem;
@@ -491,8 +545,10 @@
                 padding: 12px 30px;
             }
             #game-over h2 {
-                font-size: 2.5rem;
-                letter-spacing: 5px;
+                letter-spacing: 4px;
+            }
+            #game-over {
+                padding: 30px 18px;
             }
         }
 
@@ -520,8 +576,7 @@
                 margin-top: 0;
             }
             .pillar-fill, .pillar-preview {
-                height: 100%;
-                width: 50%;
+                height: 100% !important;
                 bottom: 0;
                 left: 0;
             }
@@ -529,6 +584,86 @@
                 bottom: 100px;
                 scale: 0.7;
             }
+        }
+
+        /* --- INITIATION DU PREMIER TOUR --- */
+        #tutorial-layer {
+            position: fixed;
+            inset: 0;
+            z-index: 260;
+            pointer-events: auto;
+            background: rgba(0, 0, 0, 0.55);
+            backdrop-filter: blur(2px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: opacity 0.4s;
+        }
+        #tutorial-box {
+            max-width: 460px;
+            width: 84%;
+            background: rgba(8, 7, 10, 0.94);
+            border: 1px solid var(--gold);
+            padding: 32px 30px 26px;
+            text-align: center;
+            box-shadow: 0 25px 60px rgba(0, 0, 0, 0.8);
+        }
+        #tutorial-step {
+            font-family: var(--font-serif);
+            font-size: 0.6rem;
+            letter-spacing: 4px;
+            color: var(--gold);
+            opacity: 0.7;
+            margin-bottom: 16px;
+        }
+        #tutorial-text {
+            font-size: 1rem;
+            line-height: 1.65;
+            color: #fff;
+            margin-bottom: 26px;
+        }
+        #tutorial-next {
+            font-family: var(--font-serif);
+            font-size: 0.7rem;
+            letter-spacing: 3px;
+            color: var(--gold);
+            border: 1px solid var(--gold);
+            padding: 10px 26px;
+            cursor: pointer;
+            display: inline-block;
+            transition: all 0.3s;
+        }
+        #tutorial-next:hover {
+            background: var(--gold);
+            color: #000;
+        }
+        #tutorial-skip {
+            display: block;
+            margin-top: 18px;
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            opacity: 0.4;
+            cursor: pointer;
+        }
+
+        /* --- ALERTE DE PERIL --- */
+        #peril-alert {
+            position: absolute;
+            top: 132px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-serif);
+            font-size: 0.72rem;
+            letter-spacing: 3px;
+            padding: 8px 20px;
+            border: 1px solid #e74c3c;
+            background: rgba(60, 10, 10, 0.75);
+            color: #ff9d9d;
+            text-transform: uppercase;
+            pointer-events: none;
+            z-index: 25;
+            transition: opacity 0.4s;
+            white-space: nowrap;
         }
 
         .hidden {
@@ -1211,6 +1346,8 @@
             <span data-i18n="harmony">HARMONIE</span>
         </div>
 
+        <div id="peril-alert" class="hidden"></div>
+
         <div id="autosave-indicator" data-i18n="autosave" style="position: absolute; top: 130px; left: 130px; font-size: 0.5rem; color: var(--gold); letter-spacing: 2px; opacity: 0; transition: opacity 0.5s; pointer-events: none; font-family: var(--font-serif);">
             SYNCHRONISATION...
         </div>
@@ -1231,6 +1368,10 @@
                 <div class="volume-control">
                     <label data-i18n="sfx">Effets</label>
                     <input type="range" id="vol-sfx" min="0" max="1" step="0.01" value="1">
+                </div>
+                <div class="volume-control">
+                    <label data-i18n="voice">Voix</label>
+                    <input type="range" id="vol-voice" min="0" max="1" step="0.01" value="0.5">
                 </div>
                 
                 <div class="config-section">
@@ -1268,7 +1409,23 @@
             <div id="card-title">Nom de la carte</div>
             <div id="card-desc">Description de l'action.</div>
             <div id="card-effects"></div>
+            <!-- Lecture vocale : demarre a l'ouverture du panneau, ce bouton
+                 l'interrompt. Il n'apparait que pendant la lecture. -->
+            <div id="speech-stop-btn" class="hidden" style="pointer-events: auto; cursor: pointer; margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-serif); font-size: 0.62rem; letter-spacing: 2px; color: var(--gold); border: 1px solid var(--gold); padding: 6px 14px; border-radius: 2px; background: rgba(0,0,0,0.4);">
+                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
+                <span data-i18n="stop_speech">ARRÊTER LA LECTURE</span>
+            </div>
             <div style="font-family: var(--font-serif); font-size: 0.65rem; margin-top: 20px; opacity: 0.4; letter-spacing: 2px; text-transform: uppercase;" data-i18n="confirm_click">Confirmer par un second clic</div>
+        </div>
+    </div>
+
+    <!-- Initiation : n'apparait qu'a la toute premiere partie -->
+    <div id="tutorial-layer" class="hidden">
+        <div id="tutorial-box">
+            <div id="tutorial-step">ÉTAPE 1 / 3</div>
+            <div id="tutorial-text"></div>
+            <div id="tutorial-next" data-i18n="tuto_next">J'AI COMPRIS</div>
+            <div id="tutorial-skip" data-i18n="tuto_skip">Passer l'initiation</div>
         </div>
     </div>
 
@@ -1276,8 +1433,11 @@
         <div style="font-family: var(--font-serif); font-size: 0.8rem; letter-spacing: 5px; opacity: 0.6; margin-bottom: 20px;" data-i18n="game_over_title">L'EXPÉRIENCE S'ACHÈVE</div>
         <h2 data-i18n="game_over_subtitle">Équilibre Rompu</h2>
         <p style="font-family: var(--font-serif); letter-spacing: 2px; opacity: 0.8;" data-i18n="game_over_desc">Votre voyage s'arrête ici.</p>
+        <!-- Cause de la fin : sans elle, un nouveau joueur ne comprend pas
+             pourquoi la partie s'est arretee. -->
+        <div id="game-over-cause" class="hidden" style="margin-top: 14px; font-family: var(--font-serif); font-size: 0.85rem; letter-spacing: 2px; padding: 8px 18px; border: 1px solid #e74c3c; color: #ff9d9d; background: rgba(60,10,10,0.5); max-width: 100%;"></div>
         
-        <div style="display: flex; gap: 20px; margin-top: 30px;">
+        <div class="actions-row">
             <div class="stat-box">
                 <div class="stat-label" data-i18n="final_score">Score Final</div>
                 <div id="final-score" class="stat-value">0</div>
@@ -1296,11 +1456,11 @@
             VICTOIRE
         </div>
         
-        <div id="game-over-summary" style="margin-top: 20px; width: 100%; max-height: 150px; overflow-y: auto; font-size: 0.7rem; color: rgba(255,255,255,0.5); padding: 10px; border-top: 1px solid rgba(197,160,89,0.2);">
+        <div id="game-over-summary" style="margin-top: 20px; width: 100%; max-width: 460px; max-height: 150px; overflow-y: auto; font-size: 0.7rem; color: rgba(255,255,255,0.5); padding: 10px 16px; border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
             <!-- Summary of the life lived will be injected here -->
         </div>
         
-        <div style="display: flex; gap: 20px; margin-top: 30px;">
+        <div class="actions-row">
             <button id="restart-btn" data-i18n="restart" style="margin-top: 0;">Recommencer</button>
             <button id="share-btn" class="menu-btn secondary" style="width: auto; padding: 14px 30px; margin-top: 0;">
                 <svg viewBox="0 0 24 24" width="18" height="18" fill="currentColor"><path d="M18 16.08c-.76 0-1.44.3-1.96.77L8.91 12.7c.05-.23.09-.46.09-.7s-.04-.47-.09-.7l7.05-4.11c.54.5 1.25.81 2.04.81 1.66 0 3-1.34 3-3s-1.34-3-3-3-3 1.34-3 3c0 .24.04.47.09.7L8.04 9.81C7.5 9.31 6.79 9 6 9c-1.66 0-3 1.34-3 3s1.34 3 3 3c.79 0 1.5-.31 2.04-.81l7.12 4.16c-.05.21-.08.43-.08.65 0 1.61 1.31 2.92 2.92 2.92 1.61 0 2.92-1.31 2.92-2.92s-1.31-2.92-2.92-2.92z"/></svg>

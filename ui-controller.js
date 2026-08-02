@@ -16,6 +16,14 @@ export class UIController {
             cardRarity: document.getElementById('card-rarity'),
             cardDesc: document.getElementById('card-desc'),
             cardEffects: document.getElementById('card-effects'),
+            speechStopBtn: document.getElementById('speech-stop-btn'),
+            tutorialLayer: document.getElementById('tutorial-layer'),
+            tutorialStep: document.getElementById('tutorial-step'),
+            tutorialText: document.getElementById('tutorial-text'),
+            tutorialNext: document.getElementById('tutorial-next'),
+            tutorialSkip: document.getElementById('tutorial-skip'),
+            perilAlert: document.getElementById('peril-alert'),
+            gameOverCause: document.getElementById('game-over-cause'),
             harmonyBadge: document.getElementById('harmony-badge'),
             settingsBtn: document.getElementById('settings-btn'),
             settingsMenu: document.getElementById('settings-menu'),
@@ -168,7 +176,26 @@ export class UIController {
         this.elements.volSfx?.addEventListener('input', (e) => handleSfx(parseFloat(e.target.value)));
         this.elements.volSfxRef?.addEventListener('input', (e) => handleSfx(parseFloat(e.target.value)));
         
-        this.elements.volVoice?.addEventListener('input', (e) => this.callbacks.onVolumeChange('voice', parseFloat(e.target.value)));
+        this.elements.volVoice?.addEventListener('input', (e) => {
+            const v = parseFloat(e.target.value);
+            this.volumeVoix = v;
+            // Couper le curseur coupe la lecture en cours.
+            if (v <= 0) this.arreterLecture();
+            this.callbacks.onVolumeChange('voice', v);
+        });
+
+        this.elements.tutorialNext?.addEventListener('click', () => {
+            this.etapeTuto++;
+            if (this.etapeTuto >= 3) this.fermerInitiation();
+            else this.afficherEtapeTuto();
+        });
+        this.elements.tutorialSkip?.addEventListener('click', () => this.fermerInitiation());
+
+        this.elements.speechStopBtn?.addEventListener('click', (e) => {
+            e.stopPropagation();
+            this.lectureCoupee = true;   // silence jusqu'a la prochaine carte
+            this.arreterLecture();
+        });
 
         this.elements.configLang.addEventListener('change', (e) => this.callbacks.onConfigChange('language', e.target.value));
         this.elements.configLangRef.addEventListener('change', (e) => this.callbacks.onConfigChange('language', e.target.value));
@@ -379,6 +406,8 @@ export class UIController {
             }
         }
 
+        this.majPeril(gameState.pillars);
+
         if (this.elements.dangerVignette) {
             if (isAnyPillarInDanger) {
                 this.elements.dangerVignette.classList.add('active');
@@ -388,10 +417,110 @@ export class UIController {
         }
     }
 
+    /**
+     * Lecture vocale de la carte presentee. Le canal audio "voice" existait
+     * dans AudioController sans que rien ne joue dessus : il pilote desormais
+     * le volume de la synthese, et son curseur apparait dans les reglages.
+     */
+    lireCarte(data) {
+        if (!('speechSynthesis' in window) || !data) return;
+        this.arreterLecture();
+        if (this.lectureCoupee) return;
+
+        const volume = this.volumeVoix ?? 0.5;
+        if (volume <= 0) return;
+
+        // Titre, puis description. Les effets chiffres ne sont pas dictes :
+        // ils sont deja lisibles d'un coup d'oeil et alourdiraient l'ecoute.
+        const texte = `${data.title}. ${data.desc || ''}`;
+        const u = new SpeechSynthesisUtterance(texte);
+        u.lang = 'fr-FR';
+        u.volume = volume;
+        u.rate = 1.0;
+        u.pitch = 1.0;
+
+        // Voix francaise si le systeme en propose une.
+        // getVoices() est vide tant que le systeme n'a pas fini de charger la
+        // liste : on se rabat alors sur la langue declaree, qui suffit.
+        const voix = (window.speechSynthesis.getVoices() || [])
+            .filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
+        if (voix.length) u.voice = voix[0];
+
+        u.onend = () => this.montrerArret(false);
+        u.onerror = () => this.montrerArret(false);
+
+        this.utteranceEnCours = u;
+        this.montrerArret(true);
+        window.speechSynthesis.speak(u);
+    }
+
+    arreterLecture() {
+        if (!('speechSynthesis' in window)) return;
+        window.speechSynthesis.cancel();
+        this.utteranceEnCours = null;
+        this.montrerArret(false);
+    }
+
+    montrerArret(visible) {
+        if (!this.elements.speechStopBtn) return;
+        this.elements.speechStopBtn.classList.toggle('hidden', !visible);
+    }
+
+    /**
+     * Initiation du premier tour. Trois messages, une seule fois dans la vie
+     * du joueur. La charte demande que le jeu soit compris en moins d'une
+     * minute : quatre phrases cachees derriere le neuvieme bouton du menu ne
+     * suffisaient pas.
+     */
+    lancerInitiation(surFin) {
+        if (!this.elements.tutorialLayer) { if (surFin) surFin(); return; }
+        this.etapeTuto = 0;
+        this.finInitiation = surFin;
+        this.afficherEtapeTuto();
+        this.elements.tutorialLayer.classList.remove('hidden');
+    }
+
+    afficherEtapeTuto() {
+        const n = this.etapeTuto + 1;
+        if (this.elements.tutorialStep) this.elements.tutorialStep.textContent = `ÉTAPE ${n} / 3`;
+        if (this.elements.tutorialText) {
+            this.elements.tutorialText.textContent = this.callbacks.getTranslation(`tuto_${n}`);
+        }
+    }
+
+    fermerInitiation() {
+        this.elements.tutorialLayer?.classList.add('hidden');
+        const cb = this.finInitiation;
+        this.finInitiation = null;
+        if (cb) cb();
+    }
+
+    /** Nomme le pilier en danger : la vignette rouge n'indiquait rien. */
+    majPeril(pillars) {
+        if (!this.elements.perilAlert) return;
+        let pire = null, ecart = 0, haut = false;
+        for (const p in pillars) {
+            const v = pillars[p];
+            const d = v < 20 ? (20 - v) : (v > 80 ? (v - 80) : 0);
+            if (d > ecart) { ecart = d; pire = p; haut = v > 80; }
+        }
+        if (!pire) {
+            this.elements.perilAlert.classList.add('hidden');
+            return;
+        }
+        const nom = this.callbacks.getTranslation(`pillar_${pire}`);
+        const etat = this.callbacks.getTranslation(haut ? 'peril_high' : 'peril_low');
+        this.elements.perilAlert.textContent = `${nom} ${etat}`;
+        this.elements.perilAlert.style.borderColor = haut ? '#f39c12' : '#e74c3c';
+        this.elements.perilAlert.style.color = haut ? '#ffd18a' : '#ff9d9d';
+        this.elements.perilAlert.classList.remove('hidden');
+    }
+
     showCardInfo(data, currentPillars) {
         if (!this.elements.cardInfo) return;
 
         if (!data) {
+            this.arreterLecture();
             this.elements.cardInfo.classList.add('hidden');
             this.elements.cardInfo.style.borderColor = 'var(--gold)';
             this.elements.cardInfo.style.animation = 'none';
@@ -486,9 +615,39 @@ export class UIController {
         
         this.elements.cardInfo.classList.remove('hidden');
         this.elements.cardInfo.style.opacity = '1'; // Ensure visibility
+
+        // Lecture automatique. Relancee a chaque nouvelle carte presentee ;
+        // une carte deja lue n'est pas repetee tant qu'on reste dessus.
+        if (this.derniereCarteLue !== data.id) {
+            this.derniereCarteLue = data.id;
+            this.lectureCoupee = false;   // une nouvelle carte relance la voix
+            this.lireCarte(data);
+        }
     }
 
     showGameOver(gameState, isNewRecord, duelOpponent = null) {
+        // Nommer la cause : sans elle, un nouveau joueur ne comprend pas
+        // pourquoi la partie s'arrete. 99 % des defaites viennent d'un
+        // depassement a 100, ce que personne ne devine.
+        if (this.elements.gameOverCause) {
+            let cause = null;
+            for (const p in gameState.pillars) {
+                const v = gameState.pillars[p];
+                if (v <= 0) { cause = [p, 'cause_zero']; break; }
+                if (v >= 100) { cause = [p, 'cause_cent']; break; }
+            }
+            if (cause) {
+                const nom = this.callbacks.getTranslation(`pillar_${cause[0]}`);
+                this.elements.gameOverCause.textContent =
+                    `${nom} ${this.callbacks.getTranslation(cause[1])}`;
+                this.elements.gameOverCause.classList.remove('hidden');
+            } else {
+                this.elements.gameOverCause.classList.add('hidden');
+            }
+        }
+        this.arreterLecture();
+        this.elements.perilAlert?.classList.add('hidden');
+
         if (this.elements.finalScore) this.elements.finalScore.textContent = gameState.score;
         if (this.elements.legacyTotal) this.elements.legacyTotal.textContent = gameState.lifetimeScore;
         
@@ -596,6 +755,7 @@ export class UIController {
         if (this.elements.volSfxLabel) this.elements.volSfxLabel.textContent = `${Math.round(settings.sfx * 100)}%`;
         
         if (this.elements.volVoice) this.elements.volVoice.value = settings.voice;
+        this.volumeVoix = settings.voice ?? 0.5;
     }
 
     showAutosave() {
