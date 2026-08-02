@@ -1,0 +1,565 @@
+/**
+ * ÉQUILIBRE - Main Application Controller (Mediator)
+ * Orchestrates all modules and handles the game loop.
+ */
+
+import { GameEngine } from './game-engine.js';
+import { SceneManager } from './scene-manager.js';
+import { UIController } from './ui-controller.js';
+import { AudioController } from './audio-controller.js';
+import { HomeController } from './home-controller.js';
+import { PersistenceController } from './persistence-controller.js';
+import { ConfigController } from './config-controller.js';
+import { NarrativeController } from './narrative-controller.js';
+import { TransitionController } from './transition-controller.js';
+import { DuelController } from './duel-controller.js';
+
+class App {
+    constructor() {
+        // Initialize controllers
+        this.persistence = new PersistenceController();
+        this.narrative = new NarrativeController();
+        this.transition = new TransitionController();
+        this.opponentData = null;
+        
+        this.config = new ConfigController({
+            onConfigChange: async (key, val) => {
+                this.persistence.saveConfig({ [key]: val });
+                
+                if (key === 'language') {
+                    this.scene.updateCardsLocalization((k) => this.config.getTranslation(k));
+                }
+
+                if (key === 'confirmClick' || key === 'screenShake') {
+                    this.ui.syncConfig(this.config.currentConfig);
+                    if (key === 'screenShake') this.scene.vfx.screenShakeEnabled = val;
+                }
+
+                if (key === 'theme' || key === 'lightMode') {
+                    // Smooth transition when changing theme/light mode
+                    await this.transition.fade(1, 400);
+                    if (key === 'lightMode') this.scene.setLightMode(val);
+                    this.ui.syncConfig(this.config.currentConfig);
+                    await this.transition.fade(0, 400);
+                } else {
+                    this.ui.syncConfig(this.config.currentConfig);
+                }
+            }
+        });
+
+        this.engine = new GameEngine(this.persistence.getStats(), this.persistence.getHeritage());
+        this.audio = new AudioController(this.persistence.getSettings());
+        
+        this.duel = new DuelController({
+            onOpponentUpdate: (data) => {
+                this.opponentData = data;
+                this.ui.updateOpponent(data);
+            }
+        });
+        
+        this.home = new HomeController({
+            onPlay: async (isContinue) => {
+                this.duel.isDuelActive = false;
+                this.opponentData = null;
+                this.ui.showDuelUI(false);
+                await this.transition.fade(1, 600);
+                
+                this.audio.playSignature();
+                this.audio.playSFX('ui-confirm-sfx', 0.2);
+                this.audio.startBGM();
+                
+                if (!isContinue) {
+                    this.engine.reset();
+                    this.narrative.reset();
+                    this.persistence.clearGameProgress();
+                }
+                
+                this.home.startExperience();
+                
+                await this.transition.fade(0, 800);
+                
+                this.scene.playIntro(() => {
+                    this.startNewTurn();
+                });
+            },
+            onDuel: async () => {
+                this.opponentData = null;
+                await this.transition.fade(1, 600);
+                
+                this.audio.playSignature();
+                this.audio.playSFX('ui-confirm-sfx', 0.2);
+                this.audio.startBGM();
+                
+                this.engine.reset();
+                this.narrative.reset();
+                this.persistence.clearGameProgress();
+                
+                await this.duel.connect();
+                this.ui.showDuelUI(true);
+                
+                this.home.startExperience();
+                
+                await this.transition.fade(0, 800);
+                
+                this.scene.playIntro(() => {
+                    this.startNewTurn();
+                });
+            },
+            onShowStats: () => {
+                this.audio.playSFX('ui-click-sfx', 0.1);
+                this.home.updateStats(this.persistence.getStats());
+            },
+            onShowMemories: () => {
+                this.audio.playSFX('ui-click-sfx', 0.1);
+                const stats = this.persistence.getStats();
+                this.home.updateMemoriesList(stats.history, stats.unlockedTrophies);
+            },
+            onShowHeritage: () => {
+                this.audio.playSFX('ui-click-sfx', 0.1);
+                this.home.updateHeritageTree(this.persistence.getHeritage());
+            },
+            onBuyUpgrade: (id, cost) => {
+                if (this.persistence.buyUpgrade(id, cost)) {
+                    this.audio.playSFX('ui-confirm-sfx', 0.2);
+                    this.home.updateHeritageTree(this.persistence.getHeritage());
+                    // Update engine with new heritage if a game is running or when starting
+                    this.engine.heritage = this.persistence.getHeritage();
+                } else {
+                    this.audio.playSFX('card-fade-sfx', 0.1);
+                }
+            },
+            onOpenSettings: () => {
+                this.audio.playSFX('ui-click-sfx', 0.1);
+                this.ui.showSettings(true);
+            }
+        });
+
+        this.ui = new UIController({
+            onVolumeChange: (type, val) => {
+                this.audio.setVolume(type, val);
+                this.persistence.saveSettings({ [type]: val });
+            },
+            onConfigChange: (key, val) => {
+                this.audio.playSFX('ui-click-sfx', 0.05);
+                if (key === 'language') this.config.setLanguage(val);
+                if (key === 'theme') this.config.setTheme(val);
+                if (key === 'lightMode') this.config.setLightMode(val);
+            },
+            onPauseStateChange: (isPaused) => {
+                this.isPaused = isPaused;
+                this.audio.playSFX('ui-click-sfx', 0.1);
+                if (isPaused) {
+                    this.audio.fadeBGM(0.3, 500);
+                } else {
+                    this.audio.fadeBGM(1.0, 500, this.engine.turn);
+                }
+            },
+            getTranslation: (key) => this.config.getTranslation(key),
+            onRestart: () => this.restartGame(),
+            onRestartHover: () => this.audio.playSFX('ui-click-sfx', 0.1),
+            onResetData: async () => {
+                await this.transition.fade(1, 1000);
+                this.persistence.data.statistics = {
+                    gamesPlayed: 0,
+                    totalTurns: 0,
+                    highestScore: 0,
+                    totalLegacy: 0,
+                    totalHarmonyShards: 0,
+                    harmoniesReached: 0,
+                    lastPlayedDate: null,
+                    history: [],
+                    unlockedTrophies: []
+                };
+                this.persistence.data.heritage = {
+                    harmonyShards: 0,
+                    upgrades: {}
+                };
+                this.persistence.save(this.persistence.STORAGE_KEYS.STATISTICS, this.persistence.data.statistics);
+                this.persistence.save('equilibre_heritage', this.persistence.data.heritage);
+                this.persistence.clearGameProgress();
+                this.restartGame();
+            },
+            onBackToMenu: async () => {
+                this.audio.playSFX('ui-confirm-sfx', 0.2);
+                await this.transition.fade(1, 600);
+                
+                this.duel.disconnect();
+                this.ui.showDuelUI(false);
+                
+                this.isPaused = false;
+                this.ui.showPause(false);
+                this.ui.showSettings(false);
+                this.audio.stopDefeatAmbient();
+                this.audio.fadeBGM(0, 1000);
+                this.audio.startMenuMusic();
+                this.ui.hideGameOver();
+                this.home.showHome();
+                
+                // Update home with latest stats
+                const stats = this.persistence.getStats();
+                const initialPillars = {};
+                import('./game-config.js').then(config => {
+                    config.PILLARS.forEach(p => initialPillars[p] = config.INITIAL_PILLAR_VALUE);
+                    this.ui.update({ 
+                        score: 0, 
+                        turn: 0, 
+                        highScore: stats.highestScore, 
+                        lifetimeScore: stats.totalLegacy,
+                        pillars: initialPillars 
+                    });
+                });
+
+                await this.transition.fade(0, 800);
+            }
+        });
+
+        this.scene = new SceneManager(document.getElementById('game-container'), {
+            onBalanceTilt: (tilt) => {
+                if (Math.abs(tilt) > 0.05) this.audio.playSFX('balance-tilt-sfx', 0.15);
+                if (Math.abs(tilt) < 0.001) this.audio.playSFX('balance-level-sfx', 0.2);
+            }
+        });
+
+        this.selectedCard = null;
+        this.lastHovered = null;
+        this.isPaused = false;
+        this.isProcessing = false;
+
+        this.init();
+    }
+
+    async init() {
+        this.scene.animate();
+        
+        // Detect mobile for initial optimization
+        this.isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        if (this.isMobile) {
+            this.scene.renderer.setPixelRatio(Math.min(window.devicePixelRatio, 1.2));
+        }
+
+        // Pause handling via ESC
+        window.addEventListener('keydown', (e) => {
+            if (e.code === 'Escape' && !this.engine.isGameOver) {
+                const isHomeVisible = !this.home.elements.homeScreen.classList.contains('hidden');
+                if (!isHomeVisible && !this.isProcessing) {
+                    this.ui.showPause(!this.isPaused);
+                }
+            }
+        });
+        
+        // Load configurations
+        const savedConfig = this.persistence.getConfig();
+        this.config.init(savedConfig);
+        this.ui.syncConfig(this.config.currentConfig);
+        this.ui.syncVolume(this.audio.settings);
+        
+        if (this.config.currentConfig.lightMode) {
+            this.scene.setLightMode(true);
+        }
+        
+        // Setup initial game state
+        const now = new Date();
+        const dailySeed = now.getFullYear() * 10000 + (now.getMonth() + 1) * 100 + now.getDate();
+        
+        if (this.persistence.data.progression) {
+            const prog = this.persistence.data.progression;
+            this.engine.pillars = { ...prog.pillars };
+            this.engine.score = prog.score;
+            this.engine.turn = prog.turn;
+            this.engine.currentSeed = prog.seed;
+            this.engine.history = prog.history || [];
+            if (prog.narrativeState) this.narrative.loadState(prog.narrativeState);
+            this.ui.update(this.engine);
+            this.ui.updateHistory(this.engine.history);
+            this.scene.updatePillars(this.engine.pillars, 50);
+            this.scene.updateHeritage(this.persistence.getStats().totalLegacy);
+            this.home.updateContinueButton(true);
+        } else {
+            this.engine.reset(dailySeed);
+            this.narrative.reset();
+            this.scene.updateHeritage(this.persistence.getStats().totalLegacy);
+            this.home.updateContinueButton(false);
+        }
+        
+        this.setupPointerEvents();
+        this.setupKeyboardEvents();
+        this.registerVisibilityHandler();
+        
+        // Initial fade in
+        const loader = document.getElementById('loading-screen');
+        if (loader) {
+            loader.style.opacity = '0';
+            setTimeout(() => loader.style.display = 'none', 1000);
+        }
+        
+        // Safety: Force hide loader if it's still there after a delay
+        setTimeout(() => {
+            const l = document.getElementById('loading-screen');
+            if (l && l.style.display !== 'none') {
+                l.style.display = 'none';
+            }
+        }, 5000);
+        
+        await this.transition.fade(0, 1000);
+
+        // Start menu music on first interaction
+        const startAudio = () => {
+            this.audio.startMenuMusic();
+            
+            if (this.isMobile && document.documentElement.requestFullscreen) {
+                document.documentElement.requestFullscreen().catch(() => {});
+            }
+
+            window.removeEventListener('pointerdown', startAudio);
+            window.removeEventListener('keydown', startAudio);
+        };
+        window.addEventListener('pointerdown', startAudio);
+        window.addEventListener('keydown', startAudio);
+    }
+
+    registerVisibilityHandler() {
+        document.addEventListener('visibilitychange', () => {
+            if (document.visibilityState === 'hidden') {
+                this.persistence.saveGameProgress({
+                    ...this.engine,
+                    narrativeState: this.narrative.getState()
+                });
+            }
+        });
+    }
+
+    async restartGame() {
+        await this.transition.fade(1, 600);
+        
+        this.audio.playSFX('ui-confirm-sfx', 0.2);
+        this.audio.stopDefeatAmbient();
+        this.audio.fadeBGM(1.0, 1500, this.engine.turn);
+        this.engine.reset();
+        this.narrative.reset();
+        this.persistence.clearGameProgress();
+        this.ui.hideGameOver();
+        
+        this.ui.update(this.engine);
+        this.scene.updatePillars(this.engine.pillars, 50);
+        
+        await this.transition.fade(0, 800);
+        this.startNewTurn();
+    }
+
+    startNewTurn() {
+        if (this.engine.isGameOver) {
+            this.handleGameOver();
+            return;
+        }
+        
+        console.log("ÉQUILIBRE - Starting new turn...");
+        
+        this.persistence.saveGameProgress({
+            ...this.engine,
+            narrativeState: this.narrative.getState()
+        });
+        this.ui.showAutosave();
+        
+        this.ui.updateHistory(this.engine.history);
+        this.audio.playSFX('card-appear-sfx', 0.15);
+        
+        // Narrative injection logic
+        this.narrative.checkTriggers(this.engine);
+        let cards = this.engine.generateCards(3);
+        cards = this.narrative.injectNarrativeCards(cards);
+        
+        this.scene.createCardMeshes(cards);
+
+        // Update UI with refresh availability if needed
+        if (this.engine.activeModifiers.refreshAvailable) {
+            this.ui.showRefreshButton(true, () => {
+                this.audio.playSFX('card-fade-sfx', 0.2);
+                this.engine.activeModifiers.refreshAvailable = false;
+                this.ui.showRefreshButton(false);
+                this.startNewTurn();
+            });
+        } else {
+            this.ui.showRefreshButton(false);
+        }
+    }
+
+    async handleGameOver() {
+        const isNewRecord = this.engine.score >= this.engine.highScore && this.engine.score > 0;
+        
+        // Sync Duel score
+        this.duel.updateMyScore(this.engine.score, this.engine.turn, true);
+        
+        // Slight delay for the player to see the broken balance
+        await new Promise(r => setTimeout(r, 1000));
+        
+        await this.transition.fade(1, 1000);
+        
+        this.audio.transitionToDefeat();
+        this.audio.playSFX(isNewRecord ? 'victory-sfx' : 'game-over-sfx', isNewRecord ? 0.3 : 0.1);
+        
+        this.persistence.recordGameEnd(this.engine.score, this.engine.turn, this.engine.reachedHarmony, this.engine.unlockedTrophies);
+        this.persistence.clearGameProgress();
+        this.home.updateContinueButton(false);
+        
+        this.ui.showGameOver(this.engine, isNewRecord, this.duel.isDuelActive ? this.opponentData : null);
+        
+        await this.transition.fade(0, 1500);
+    }
+
+    setupPointerEvents() {
+        window.addEventListener('pointermove', (e) => this.handlePointer(e, 'move'));
+        window.addEventListener('pointerdown', (e) => this.handlePointer(e, 'click'));
+
+        // Right-click / secondary button flips a card for inspection (reveals the
+        // ornate back). Suppress the browser context menu over the game canvas.
+        window.addEventListener('contextmenu', (e) => {
+            if (this.engine.isGameOver || this.isPaused || this.isProcessing) return;
+            const mesh = this.getCardUnderPointer(e);
+            if (mesh) {
+                e.preventDefault();
+                this.audio.playSFX('card-flip-sfx', 0.25);
+                this.scene.cardController.flip(mesh);
+            }
+        });
+    }
+
+    /** Returns the card mesh currently under the given pointer event, or null. */
+    getCardUnderPointer(event) {
+        if (!this.scene.cardController) return null;
+        const rect = this.scene.renderer.domElement.getBoundingClientRect();
+        this.scene.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.scene.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        this.scene.raycaster.setFromCamera(this.scene.mouse, this.scene.camera);
+        const intersects = this.scene.raycaster.intersectObjects(this.scene.cards);
+        return intersects.length > 0 ? intersects[0].object : null;
+    }
+
+    setupKeyboardEvents() {
+        window.addEventListener('keydown', (e) => {
+            if (this.engine.isGameOver || this.isPaused || this.isProcessing) {
+                if (this.engine.isGameOver && (e.code === 'Space' || e.code === 'Enter')) this.restartGame();
+                return;
+            }
+
+            const cardIndex = parseInt(e.key) - 1;
+            if (cardIndex >= 0 && cardIndex < 3) {
+                const meshes = this.scene.cards;
+                if (meshes[cardIndex]) {
+                    const mesh = meshes[cardIndex];
+                    if (this.selectedCard === mesh) {
+                        this.confirmCard(mesh.userData.data, mesh);
+                    } else {
+                        this.selectCard(mesh);
+                        this.ui.showCardInfo(mesh.userData.data, this.engine.pillars);
+                    }
+                }
+            }
+
+            if (e.code === 'Escape' && this.selectedCard) {
+                this.scene.cardController.deselect(this.selectedCard);
+                this.scene.resetCamera();
+                this.selectedCard = null;
+                this.ui.showCardInfo(null);
+            }
+        });
+    }
+
+    handlePointer(event, type) {
+        if (this.engine.isGameOver || this.isPaused || this.isProcessing) return;
+        if (event.pointerType === 'touch' && !event.isPrimary) return;
+
+        const rect = this.scene.renderer.domElement.getBoundingClientRect();
+        this.scene.mouse.x = ((event.clientX - rect.left) / rect.width) * 2 - 1;
+        this.scene.mouse.y = -((event.clientY - rect.top) / rect.height) * 2 + 1;
+        
+        this.scene.raycaster.setFromCamera(this.scene.mouse, this.scene.camera);
+        const intersects = this.scene.raycaster.intersectObjects(this.scene.cards);
+
+        if (intersects.length > 0) {
+            const mesh = intersects[0].object;
+            const data = mesh.userData.data;
+
+            if (type === 'click') {
+                const needsConfirm = this.config.currentConfig.confirmClick;
+                if (this.selectedCard === mesh || !needsConfirm) {
+                    this.confirmCard(data, mesh);
+                } else {
+                    this.selectCard(mesh);
+                }
+            } else {
+                if (this.lastHovered !== mesh) {
+                    if (this.lastHovered) this.scene.cardController.setHover(this.lastHovered, false);
+                    this.lastHovered = mesh;
+                    this.scene.cardController.setHover(mesh, true);
+                    this.audio.playSFX('card-hover-sfx', 0.15);
+                    this.ui.showCardInfo(data, this.engine.pillars);
+                }
+                document.body.style.cursor = 'pointer';
+            }
+        } else {
+            if (type === 'click' && this.selectedCard) {
+                this.scene.cardController.deselect(this.selectedCard);
+                this.scene.resetCamera();
+                this.selectedCard = null;
+                this.ui.showCardInfo(null);
+            }
+            
+            if (type === 'move') {
+                if (this.lastHovered) {
+                    this.scene.cardController.setHover(this.lastHovered, false);
+                    this.lastHovered = null;
+                }
+                this.ui.showCardInfo(null);
+                document.body.style.cursor = 'default';
+            }
+        }
+    }
+
+    selectCard(mesh) {
+        if (this.selectedCard) {
+            this.scene.cardController.deselect(this.selectedCard);
+        }
+        this.selectedCard = mesh;
+        this.scene.cardController.select(mesh);
+        this.scene.onCardSelected(mesh.userData.data.isNarrative);
+        this.audio.refreshActiveVolumes(true, this.engine.turn);
+        this.audio.playSFX('card-flip-sfx', 0.25);
+    }
+
+    confirmCard(data, mesh) {
+        if (this.isProcessing) return;
+        this.isProcessing = true;
+
+        this.engine.applyCard(data);
+        this.narrative.onCardPlayed(data);
+        this.scene.resetCamera();
+        this.audio.refreshActiveVolumes(false, this.engine.turn);
+        this.audio.playSFX('card-fade-sfx', 0.25);
+        
+        // Sync Duel score
+        this.duel.updateMyScore(this.engine.score, this.engine.turn, false);
+        
+        if (this.engine.reachedHarmony) {
+            this.audio.playSignature();
+            this.audio.playSFX('harmony-sfx', 0.3);
+        } else {
+            // Synergy sound feedback
+            if (this.engine.activeSynergy) {
+                const sfxName = this.engine.activeSynergy.type === 'resonance' ? 'ui-confirm-sfx' : 'card-fade-sfx';
+                this.audio.playSFX(sfxName, 0.2);
+            }
+            this.audio.playSFX(`sfx-${data.category}`, 0.2) || this.audio.playSFX('card-play-sfx', 0.25);
+            this.audio.playSFX('pillar-update-sfx', 0.1);
+        }
+
+        this.scene.cardController.play(mesh, () => {
+            this.isProcessing = false;
+            this.startNewTurn();
+        });
+        this.selectedCard = null;
+        this.ui.update(this.engine);
+        this.scene.updatePillars(this.engine.pillars, this.engine.reachedHarmony ? 0 : 60, this.engine.reachedHarmony, data);
+    }
+}
+
+new App();
