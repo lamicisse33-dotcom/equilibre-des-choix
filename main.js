@@ -357,18 +357,42 @@ class App {
         window.addEventListener('keydown', startAudio);
     }
 
+    /** Ecrit l'etat courant. Appelable a tout moment, sans effet de bord. */
+    sauvegarder() {
+        try {
+            this.persistence.saveGameProgress({
+                ...this.engine,
+                narrativeState: this.narrative.getState()
+            });
+        } catch (e) {
+            console.warn('Sauvegarde impossible', e);
+        }
+    }
+
     registerVisibilityHandler() {
+        // Un seul evenement ne suffit pas. Sur iPhone, une application fermee
+        // depuis le selecteur ne declenche pas toujours visibilitychange ;
+        // pagehide est le seul signal fiable. freeze precede la mise en veille
+        // des onglets par Chrome. On ecoute les quatre.
+        const enregistrer = () => this.sauvegarder();
+
         document.addEventListener('visibilitychange', () => {
-            // La synthese vocale continue de parler dans un onglet en fond :
-            // on la coupe explicitement.
-            if (document.visibilityState === 'hidden') this.ui.arreterLecture?.();
-            if (document.visibilityState === 'hidden') {
-                this.persistence.saveGameProgress({
-                    ...this.engine,
-                    narrativeState: this.narrative.getState()
-                });
-            }
+            if (document.visibilityState !== 'hidden') return;
+            // La synthese vocale continue de parler en arriere-plan.
+            this.ui.arreterLecture?.();
+            enregistrer();
         });
+        window.addEventListener('pagehide', enregistrer);
+        window.addEventListener('beforeunload', enregistrer);
+        window.addEventListener('blur', enregistrer);
+        document.addEventListener('freeze', enregistrer);
+
+        // Filet supplementaire : une ecriture par minute pendant la partie.
+        // Elle ne coute rien et couvre les fermetures brutales -- batterie a
+        // plat, application tuee par le systeme -- qui n'emettent aucun signal.
+        setInterval(() => {
+            if (this.engine && !this.engine.isGameOver && this.engine.turn > 0) enregistrer();
+        }, 60000);
     }
 
     async restartGame() {
@@ -397,10 +421,9 @@ class App {
         
         console.log(`ÉQUILIBRE - Starting new turn... (Meditation: ${this.engine.isMeditationMode})`);
         
-        this.persistence.saveGameProgress({
-            ...this.engine,
-            narrativeState: this.narrative.getState()
-        });
+        // Ecrit avant le tirage : la graine enregistree est celle d'avant la
+        // main, donc une reprise redonne exactement les memes trois cartes.
+        this.sauvegarder();
         this.ui.showAutosave();
         
         this.ui.updateHistory(this.engine.history);

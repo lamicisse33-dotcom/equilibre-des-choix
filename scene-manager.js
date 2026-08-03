@@ -14,6 +14,8 @@ export class SceneManager {
     static SLOT_X = 2.15;     // cardSlots de TableController
     static BASE_DIST = 7.74;  // distance camera -> point de vise en jeu
     static BASE_OFFSET = { y: 4.2, z: 6.5 };
+    static MARGE = 0.12;      // marge de securite laterale
+    static BORD_MAX = 0.94;   // occupation laterale maximale, en coordonnees normalisees
     static MIN_FOV = 45;      // cadrage d'origine, conserve sur desktop
     static MIN_FOV_COURT = 30; // ecran bas (telephone couche) : on resserre
     static MAX_FOV = 58;      // au-dela la perspective se deforme
@@ -89,7 +91,7 @@ export class SceneManager {
             : (SceneManager.ecartementBase(n, aspect) * (n - 1)) / 2;
         // Marge ramenee de 0.20 a 0.12 : elle coutait 5 % de taille de carte a
         // l'ecran pour une securite dont la mesure montre qu'elle etait excessive.
-        return demiRangee * spread + (SceneManager.CARD_W * scale) / 2 + 0.12;
+        return demiRangee * spread + (SceneManager.CARD_W * scale) / 2 + SceneManager.MARGE;
     }
 
     constructor(container, callbacks) {
@@ -514,6 +516,11 @@ export class SceneManager {
 
         // La rangee n'est plus au point de vise mais AVANCEE unites devant :
         // c'est a cette distance-la que la largeur doit tenir.
+        //
+        // Et il ne suffit pas de cadrer la rangee au repos : la carte
+        // selectionnee avance de SELECT_Z vers le joueur et grossit de
+        // SELECT_SCALE. Vue de plus pres, elle occupe bien plus de largeur --
+        // c'est elle qui sortait du cadre par les cotes.
         let dist = SceneManager.BASE_DIST;
         let fov = THREE.MathUtils.radToDeg(
             Math.atan(besoin / ((dist - SceneManager.AVANCEE) * aspect)) * 2);
@@ -549,6 +556,29 @@ export class SceneManager {
                                      THREE.MathUtils.radToDeg(Math.atan(t) * 2));
             if (nouveau <= fov + 0.01) break;
             fov = nouveau;
+        }
+
+        // --- Ajustement mesure, et non plus estime ---
+        // Le calcul analytique divergeait de la projection reelle de Three.js,
+        // et surtout il ignorait que la carte selectionnee avance vers le
+        // joueur : c'est elle qui sortait par les cotes. On projette donc les
+        // points les plus extremes avec la vraie camera, et on elargit le champ
+        // jusqu'a ce qu'ils rentrent.
+        for (let i = 0; i < 8; i++) {
+            const debord = this.debordementLateral(fov, dist, aspect);
+            if (debord === null || debord <= SceneManager.BORD_MAX) break;
+            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (debord / SceneManager.BORD_MAX);
+            const nouveauFov = THREE.MathUtils.radToDeg(Math.atan(t) * 2);
+            if (nouveauFov <= SceneManager.MAX_FOV) {
+                if (nouveauFov <= fov + 0.01) break;
+                fov = nouveauFov;
+            } else {
+                // Champ au maximum : on recule la camera.
+                fov = SceneManager.MAX_FOV;
+                const nouveau = dist * (debord / SceneManager.BORD_MAX);
+                if (nouveau <= dist + 0.01) break;
+                dist = nouveau;
+            }
         }
 
         this.camera.fov = fov;
@@ -587,6 +617,41 @@ export class SceneManager {
         const yc = dy * uy + dz * uz;
         if (zc <= 0.001) return null;
         return (1 - (yc / zc) / Math.tan(THREE.MathUtils.degToRad(fov / 2))) / 2;
+    }
+
+    /**
+     * Debordement lateral maximal, mesure par projection reelle.
+     * Retourne la valeur absolue de la coordonnee normalisee la plus extreme :
+     * 1.0 = pile sur le bord de l'ecran, au-dela = hors cadre.
+     */
+    debordementLateral(fov, dist, aspect) {
+        const l = CardController.layoutFor(aspect);
+        const slot = this.table ? this.table.getCardSlot(2) : { y: 1.0, z: 4.1 };
+        const y = slot.y + CardController.LIFT_Y, z = slot.z;
+        const demi = (CardController.CARD_W * l.scale) / 2;
+        const demiSel = demi * CardController.SELECT_SCALE;
+        const xRepos = SceneManager.SLOT_X * l.spread + demi;
+        const xSel = SceneManager.SLOT_X * l.spread + demiSel;
+
+        const ratio = dist / SceneManager.BASE_DIST;
+        const descente = this.calculerDescente(fov, dist);
+        const ly = SceneManager.BASE_LOOK_Y + descente;
+        const cy = ly + SceneManager.BASE_OFFSET.y * ratio;
+        const cz = 2.4 + SceneManager.BASE_OFFSET.z * ratio;
+
+        const cam = this._camMesure || (this._camMesure = new THREE.PerspectiveCamera());
+        cam.fov = fov; cam.aspect = aspect; cam.near = 0.1; cam.far = 1000;
+        cam.position.set(0, cy, cz);
+        cam.lookAt(0, ly, 2.4);
+        cam.updateMatrixWorld(true);
+        cam.updateProjectionMatrix();
+
+        const v = new THREE.Vector3();
+        // Au repos, et selectionnee : soulevee de 0.95 et avancee de SELECT_Z.
+        const a = v.set(xRepos, y, z).project(cam).x;
+        const b = v.set(xSel, y + 0.95, z + CardController.SELECT_Z).project(cam).x;
+        if (!isFinite(a) || !isFinite(b)) return null;
+        return Math.max(Math.abs(a), Math.abs(b));
     }
 
     /** Bornes verticales de la rangee a l'ecran, pour un champ et une distance. */

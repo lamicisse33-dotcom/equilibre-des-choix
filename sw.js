@@ -1,4 +1,4 @@
-const VERSION = 'v32';
+const VERSION = 'v35';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -105,13 +105,18 @@ async function precacher() {
 }
 
 self.addEventListener('install', (event) => {
-  // Installation immediate, sans precache : la page passe en premier.
-  self.skipWaiting();
+  // Plus de skipWaiting automatique : la nouvelle version reste en attente et
+  // c'est le joueur qui decide de l'appliquer. Basculer en pleine partie
+  // remplacerait les fichiers sous ses pieds.
 });
 
-// La page previent quand elle a fini de charger.
 self.addEventListener('message', (event) => {
   if (event.data === 'precache') precacher();
+  // Le joueur a accepte la mise a jour : on prend la main, la page rechargera.
+  if (event.data === 'appliquerMaj') self.skipWaiting();
+  if (event.data === 'version') {
+    event.source?.postMessage({ type: 'version', version: VERSION });
+  }
 });
 
 self.addEventListener('activate', (event) => {

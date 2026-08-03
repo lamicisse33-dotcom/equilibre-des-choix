@@ -29,6 +29,12 @@ export class CardController {
 
     static SLOT_X = 2.15;                 // ecartement lateral (TableController)
 
+    // Deplacement d'une carte a la selection. SceneManager en tient compte
+    // dans le cadrage : la carte avance vers le joueur et grossit, donc elle
+    // occupe bien plus de largeur a l'ecran que les deux autres.
+    static SELECT_Z = 0.75;               // pire cas : carte legendaire ou mythique
+    static SELECT_SCALE = 1.16;           // idem
+
     // Espace de conception de la face. Le rendu se fait a RES fois cette
     // taille : la resolution de texture monte sans toucher aux coordonnees.
     static DES_W = 512;
