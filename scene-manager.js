@@ -201,7 +201,14 @@ export class SceneManager {
         // du service worker, elles se resolvaient parfois avant que onLoad ne
         // soit branche, et l'evenement ne se declenchait jamais. L'ecran de
         // chargement restait alors fige, sans la moindre erreur a signaler.
-        this.loadingManager.onLoad = () => {
+        // Chien de garde : si les textures ne sont pas toutes arrivees au bout
+        // de 8 secondes, on demarre quand meme avec ce qui est la. Un asset qui
+        // ne repond ni par un succes ni par une erreur -- cache incoherent,
+        // reseau qui pend -- ne doit jamais empecher le jeu de se lancer.
+        this._demarrerScene = () => {
+          if (this._sceneDemarree) return;
+          this._sceneDemarree = true;
+          clearTimeout(this._chienDeGarde);
           try {
             this.assetsLoaded = true;
             this.table = new TableController(this.scene, this.loader, this.textures);
@@ -234,13 +241,21 @@ export class SceneManager {
                 this.sceneReady = true;
                 if (loadingScreen) {
                     loadingScreen.style.opacity = '0';
-                    setTimeout(() => loadingScreen.remove(), 1000);
+                    setTimeout(() => {
+                        // display: none en plus du retrait : le filet de 15 s
+                        // de main.js s'appuie dessus pour savoir que tout va bien.
+                        loadingScreen.style.display = 'none';
+                        loadingScreen.remove();
+                    }, 1000);
                 }
             };
 
+            // Les modeles 3D s'ajoutent a la scene des qu'ils arrivent : rien
+            // ne depend d'eux pour jouer. On leur laisse un court repit pour
+            // eviter de decouvrir une table vide, puis on demarre sans eux.
             if (this._modelesEnCours > 0) {
                 this._modelesTermines = masquerChargement;
-                setTimeout(masquerChargement, 10000);
+                setTimeout(masquerChargement, 2500);
             } else {
                 masquerChargement();
             }
@@ -264,6 +279,16 @@ export class SceneManager {
             }
           }
         };
+
+        this.loadingManager.onLoad = () => this._demarrerScene();
+
+        // Le chien de garde ne remplace pas onLoad : il le double.
+        this._chienDeGarde = setTimeout(() => {
+            if (this._sceneDemarree) return;
+            const p = this.progression || { charges: 0, total: 0 };
+            console.warn(`Demarrage force : ${p.charges}/${p.total} ressources chargees.`);
+            this._demarrerScene();
+        }, 6000);
 
         this.textures = {
             wood: this.textureLoader.load('assets/noble-wood-texture.webp'),

@@ -1,4 +1,4 @@
-const VERSION = 'v29';
+const VERSION = 'v31';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -87,19 +87,31 @@ const ASSETS = [
   './assets/models/zen-rock-stack.glb',
 ];
 
+// Le precache entrait en concurrence avec le chargement de la page : le
+// telephone lançait 79 requetes supplementaires pendant que le jeu attendait
+// ses textures. Il est desormais differe, lance une seule fois, apres que la
+// page a eu le temps de se charger.
+let precacheLance = false;
+async function precacher() {
+  if (precacheLance) return;
+  precacheLance = true;
+  const cache = await caches.open(CACHE_NAME);
+  // Par lots de 4 : cache.addAll est atomique, un seul 404 annulerait tout.
+  for (let i = 0; i < ASSETS.length; i += 4) {
+    await Promise.all(ASSETS.slice(i, i + 4)
+      .map(u => cache.add(u).catch(e => console.warn('SW ignore', u, e))));
+  }
+  console.log('SW : mise en cache hors ligne terminee.');
+}
+
 self.addEventListener('install', (event) => {
-  // Le precache ne bloque plus l'installation : 79 requetes lancees d'un coup
-  // saturaient le reseau d'un telephone et retardaient la prise de controle,
-  // laissant la page attendre ses textures. Il se poursuit en arriere-plan.
+  // Installation immediate, sans precache : la page passe en premier.
   self.skipWaiting();
-  event.waitUntil((async () => {
-    const cache = await caches.open(CACHE_NAME);
-    // Par lots de 6 : cache.addAll est atomique, un seul 404 annulerait tout.
-    for (let i = 0; i < ASSETS.length; i += 6) {
-      await Promise.all(ASSETS.slice(i, i + 6)
-        .map(u => cache.add(u).catch(e => console.warn('SW ignore', u, e))));
-    }
-  })());
+});
+
+// La page previent quand elle a fini de charger.
+self.addEventListener('message', (event) => {
+  if (event.data === 'precache') precacher();
 });
 
 self.addEventListener('activate', (event) => {
@@ -107,6 +119,9 @@ self.addEventListener('activate', (event) => {
     const keys = await caches.keys();
     await Promise.all(keys.filter(k => k !== CACHE_NAME).map(k => caches.delete(k)));
     await self.clients.claim();
+    // Filet : si la page n'envoie jamais le signal, on precache quand meme,
+    // mais bien apres son chargement.
+    setTimeout(precacher, 20000);
   })());
 });
 

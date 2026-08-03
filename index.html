@@ -1603,6 +1603,13 @@
         if ('serviceWorker' in navigator) {
             window.addEventListener('load', () => {
                 navigator.serviceWorker.register('./sw.js')
+                    .then(() => {
+                        // Le jeu est charge : le service worker peut remplir son
+                        // cache hors ligne sans genrer le demarrage.
+                        setTimeout(() => {
+                            navigator.serviceWorker.controller?.postMessage('precache');
+                        }, 6000);
+                    })
                     .catch(err => console.warn('SW non enregistre', err));
             });
         }

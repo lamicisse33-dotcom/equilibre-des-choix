@@ -90,6 +90,14 @@ export class PersistenceController {
             rescueUsed: gameState.rescueUsed,
             consecutiveHarmony: gameState.consecutiveHarmony,
             unlockedTrophies: gameState.unlockedTrophies,
+            // Ces trois champs manquaient a la liste blanche : le pantheon et
+            // le mode Meditation n'etaient donc jamais ecrits sur le disque.
+            // En reprenant une partie, le joueur perdait son personnage, sa
+            // capacite et ses multiplicateurs -- meme apres que loadState ait
+            // appris a les relire.
+            selectedPantheon: gameState.selectedPantheon,
+            isMeditationMode: gameState.isMeditationMode,
+            triggeredAbilities: gameState.triggeredAbilities,
             timestamp: Date.now()
         };
         this.data.progression = progress;
