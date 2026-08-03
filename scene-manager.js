@@ -31,8 +31,9 @@ export class SceneManager {
     // Toute la scene -- balance, table, rangee -- est remontee pour degager le
     // bas de l'ecran. La fenetre de detail y retrouve sa place sans masquer
     // les cartes.
-    static BAS_CIBLE = 0.69;
-    static HAUT_MINI = 0.10;
+    static BAS_CIBLE = 0.48;
+    // Abaisse pour laisser la rangee remonter jusqu'au bandeau superieur.
+    static HAUT_MINI = 0.05;
     static HAUT_MINI_COURT = 0.22;     // laisse place au bandeau en paysage
     static BASE_LOOK_Y = 0.4;
     // Avancee de la rangee vers le joueur (voir TableController.cardSlots).
