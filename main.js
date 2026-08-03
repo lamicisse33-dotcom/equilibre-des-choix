@@ -160,6 +160,8 @@ class App {
             },
             onPauseStateChange: (isPaused) => {
                 this.isPaused = isPaused;
+                // Le jeu se met en pause : la voix ne doit pas continuer seule.
+                if (isPaused) this.ui.arreterLecture?.();
                 this.audio.playSFX('ui-click-sfx', 0.1);
                 if (isPaused) {
                     this.audio.fadeBGM(0.3, 500);

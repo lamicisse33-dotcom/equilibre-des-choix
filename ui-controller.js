@@ -465,26 +465,38 @@ export class UIController {
             .filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
         if (voix.length) u.voice = voix[0];
 
-        u.onend = () => this.montrerArret(false);
-        u.onerror = () => this.montrerArret(false);
+        const synth = window.speechSynthesis;
+
+        // Le bouton n'apparait qu'une fois la voix reellement partie. Il etait
+        // affiche d'avance : quand la synthese etait bloquee, il restait la
+        // sans qu'aucun son ne sorte.
+        u.onstart = () => { if (this.utteranceEnCours === u) this.montrerArret(true); };
+        u.onend = () => { if (this.utteranceEnCours === u) this.arreterLecture(); };
+        u.onerror = () => { if (this.utteranceEnCours === u) this.arreterLecture(); };
 
         this.utteranceEnCours = u;
-        this.montrerArret(true);
 
-        const synth = window.speechSynthesis;
         // Safari se met parfois en pause de lui-meme et n'en sort pas seul.
         if (synth.paused) synth.resume();
+        // On parle dans le meme geste que le clic : differer l'appel, meme de
+        // quelques millisecondes, fait perdre a Safari l'autorisation de
+        // l'utilisateur et la lecture reste muette.
+        if (synth.speaking || synth.pending) synth.cancel();
+        synth.speak(u);
 
-        if (synth.speaking || synth.pending) {
-            // cancel() suivi d'un speak() immediat laisse Safari muet : il faut
-            // rendre la main au navigateur entre les deux.
-            synth.cancel();
-            setTimeout(() => {
-                if (this.utteranceEnCours === u && !this.lectureCoupee) synth.speak(u);
-            }, 120);
-        } else {
-            synth.speak(u);
-        }
+        // Filet : si rien n'a demarre au bout de 400 ms, on retente une fois.
+        clearTimeout(this._relanceVoix);
+        this._relanceVoix = setTimeout(() => {
+            if (this.utteranceEnCours !== u || this.lectureCoupee) return;
+            if (!synth.speaking && !synth.pending) {
+                try { synth.speak(u); } catch (e) { /* synthese indisponible */ }
+                setTimeout(() => {
+                    if (this.utteranceEnCours === u && !synth.speaking && !synth.pending) {
+                        this.montrerArret(false);   // decidement muet
+                    }
+                }, 800);
+            }
+        }, 400);
     }
 
     /**
@@ -501,9 +513,22 @@ export class UIController {
 
     arreterLecture() {
         if (!('speechSynthesis' in window)) return;
+        clearTimeout(this._relanceVoix);
         window.speechSynthesis.cancel();
         this.utteranceEnCours = null;
         this.montrerArret(false);
+    }
+
+    /**
+     * Ferme le panneau de detail. Point de passage unique : toute voie qui
+     * masque la fenetre coupe aussi la lecture, sans exception.
+     */
+    masquerDetail() {
+        this.arreterLecture();
+        this.derniereCarteLue = null;
+        this.elements.cardInfo?.classList.add('hidden');
+        if (this.elements.cardInfo) this.elements.cardInfo.style.opacity = '0';
+        if (this.dernierPillars) this.majPeril(this.dernierPillars);
     }
 
     montrerArret(visible) {
@@ -569,10 +594,7 @@ export class UIController {
         if (!this.elements.cardInfo) return;
 
         if (!data) {
-            this.arreterLecture();
-            this.elements.cardInfo.classList.add('hidden');
-            // Le detail se referme : le rappel de peril peut reprendre sa place.
-            if (this.dernierPillars) this.majPeril(this.dernierPillars);
+            this.masquerDetail();
             this.elements.cardInfo.style.borderColor = 'var(--gold)';
             this.elements.cardInfo.style.animation = 'none';
             if (this.elements.synergyStatus) this.elements.synergyStatus.classList.add('hidden');
@@ -696,7 +718,7 @@ export class UIController {
                 this.elements.gameOverCause.classList.add('hidden');
             }
         }
-        this.arreterLecture();
+        this.masquerDetail();
         this.elements.perilAlert?.classList.add('hidden');
 
         if (this.elements.finalScore) this.elements.finalScore.textContent = gameState.score;

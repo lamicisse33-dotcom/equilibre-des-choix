@@ -380,8 +380,10 @@
 
         #harmony-badge {
             position: absolute;
-            top: 130px;
-            right: 40px;
+            /* Descendu sous l'alerte de peril : les deux se chevauchaient au
+               centre de l'ecran quand l'un et l'autre etaient actifs. */
+            top: 168px;
+            right: 24px;
             background: rgba(197, 160, 89, 0.15);
             border: 1px solid var(--gold);
             color: var(--gold-bright);
@@ -645,7 +647,9 @@
                 top: 6px;
                 font-size: 0.6rem;
                 padding: 4px 12px;
+                max-width: 60vw;
             }
+            #harmony-badge { top: 40px; right: 12px; font-size: 0.6rem; padding: 5px 10px; }
         }
 
         /* --- INITIATION DU PREMIER TOUR --- */
@@ -730,7 +734,9 @@
             z-index: 24;
             transition: opacity 0.4s;
             white-space: nowrap;
-            max-width: 92vw;
+            /* Bride a 70 % de la largeur : l'alerte atteignait le bord droit et
+               passait sous le badge d'harmonie. */
+            max-width: 70vw;
             overflow: hidden;
             text-overflow: ellipsis;
         }
