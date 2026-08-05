@@ -241,7 +241,10 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(0, 0, 0, 0.97);
+            /* Le bandeau superieur transparaissait derriere : fond plus dense
+               et flou, pour que l'ecran de fin soit un vrai ecran. */
+            background: rgba(0, 0, 0, 0.985);
+            backdrop-filter: blur(18px);
             display: flex;
             flex-direction: column;
             justify-content: center;
@@ -249,9 +252,9 @@
             /* Sans marge ni centrage du texte, le titre et la liste sortaient
                par la gauche en portrait, et la rangee de boutons debordait des
                deux cotes. */
-            padding: 40px 24px;
+            padding: 40px 28px;
             text-align: center;
-            gap: 4px;
+            gap: 6px;
             overflow-y: auto;
             /* Passe au-dessus des jauges de piliers, qui restaient visibles
                au travers de l'ecran de fin. */
@@ -261,8 +264,10 @@
         /* Tout enfant direct est contenu dans la largeur utile. Sans
            box-sizing, le padding du bandeau de cause s'ajoutait a 100 % et le
            cadre sortait de l'ecran par la droite. */
+        /* 560 px laissaient a peine 30 px de marge sur un ecran de 620 px :
+           titre, bandeau et liste touchaient les bords. */
         #game-over > * {
-            max-width: min(560px, 100%);
+            max-width: min(440px, 86vw);
             box-sizing: border-box;
         }
         #game-over p,
@@ -272,6 +277,9 @@
         }
         #game-over #game-over-summary {
             box-sizing: border-box;
+            width: 100%;
+            max-width: min(440px, 86vw);
+            padding: 12px 4px 4px;
         }
         /* La rangee de boutons passe a la ligne au lieu de deborder. */
         #game-over .actions-row {
@@ -286,7 +294,7 @@
             font-family: var(--font-serif);
             /* 4rem debordait sur telephone : la taille suit desormais la
                largeur disponible. */
-            font-size: clamp(1.9rem, 8vw, 4rem);
+            font-size: clamp(1.7rem, 6.5vw, 3rem);
             line-height: 1.1;
             max-width: 100%;
             overflow-wrap: break-word;
@@ -586,13 +594,16 @@
                jusqu'aux bords. */
             #game-over p {
                 letter-spacing: 1px !important;
-                font-size: 0.9rem;
+                font-size: 0.88rem;
+                line-height: 1.5;
             }
             #game-over #game-over-cause {
-                letter-spacing: 1px;
-                font-size: 0.78rem !important;
-                padding: 10px 14px !important;
+                letter-spacing: 0.5px;
+                font-size: 0.76rem !important;
+                padding: 11px 14px !important;
             }
+            #game-over .stat-box { padding: 12px 18px; }
+            #game-over #game-over-summary { font-size: 0.74rem; }
         }
 
         @media (orientation: landscape) and (max-height: 620px) {
@@ -1235,6 +1246,9 @@
                 <button id="stats-btn" class="menu-btn secondary" data-i18n="statistics">Statistiques</button>
                 <button id="leaderboard-btn" class="menu-btn secondary" data-i18n="leaderboard">Classement</button>
                 <button id="memories-btn" class="menu-btn secondary" data-i18n="memories">Galerie des Souvenirs</button>
+                <!-- Commande dediee a la lecture vocale : accessible depuis le
+                     menu, sans passer par les parametres. -->
+                <button id="voice-toggle-btn" class="menu-btn secondary">Lecture vocale : activée</button>
                 <button id="rules-btn" class="menu-btn secondary" data-i18n="rules">Règles</button>
                 <button id="credits-btn" class="menu-btn secondary" data-i18n="credits">Crédits</button>
                 <button id="home-settings-btn" class="menu-btn secondary" data-i18n="settings">Paramètres</button>
@@ -1632,7 +1646,7 @@
         <p style="font-family: var(--font-serif); letter-spacing: 2px; opacity: 0.8;" data-i18n="game_over_desc">Votre voyage s'arrête ici.</p>
         <!-- Cause de la fin : sans elle, un nouveau joueur ne comprend pas
              pourquoi la partie s'est arretee. -->
-        <div id="game-over-cause" class="hidden" style="margin-top: 14px; font-family: var(--font-serif); font-size: 0.85rem; letter-spacing: 2px; padding: 8px 18px; border: 1px solid #e74c3c; color: #ff9d9d; background: rgba(60,10,10,0.5); max-width: 100%;"></div>
+        <div id="game-over-cause" class="hidden" style="margin-top: 16px; font-family: var(--font-serif); font-size: 0.8rem; line-height: 1.55; letter-spacing: 1px; padding: 12px 16px; border: 1px solid #e74c3c; color: #ff9d9d; background: rgba(60,10,10,0.5);"></div>
         
         <div class="actions-row">
             <div class="stat-box">
@@ -1653,7 +1667,7 @@
             VICTOIRE
         </div>
         
-        <div id="game-over-summary" style="margin-top: 20px; width: 100%; max-width: 460px; max-height: 150px; overflow-y: auto; font-size: 0.7rem; color: rgba(255,255,255,0.5); padding: 10px 16px; border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
+        <div id="game-over-summary" style="margin-top: 18px; max-height: 150px; overflow-y: auto; font-size: 0.78rem; color: rgba(255,255,255,0.62); border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
             <!-- Summary of the life lived will be injected here -->
         </div>
         

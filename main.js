@@ -143,6 +143,14 @@ class App {
                 this.audio.playSFX('ui-click-sfx', 0.1);
                 this.ui.showSettings(true);
             },
+            // Bascule de la lecture vocale depuis le menu. Un seul reglage
+            // pilote le bouton du menu et la ligne des parametres : les deux
+            // restent toujours d'accord.
+            onToggleVoice: () => {
+                const actif = !(this.config.currentConfig.cardReading !== false);
+                this.audio.playSFX('ui-click-sfx', 0.1);
+                this.appliquerReglageVoix(actif);
+            },
             getTranslation: (key) => this.config.getTranslation(key)
         });
 
@@ -157,6 +165,9 @@ class App {
                 if (key === 'playerName') this.config.setPlayerName(val);
                 if (key === 'theme') this.config.setTheme(val);
                 if (key === 'lightMode') this.config.setLightMode(val);
+                // La ligne des parametres et le bouton du menu passent par le
+                // meme chemin : impossible qu'ils se contredisent.
+                if (key === 'cardReading') this.appliquerReglageVoix(val);
             },
             onPauseStateChange: (isPaused) => {
                 this.isPaused = isPaused;
@@ -309,6 +320,10 @@ class App {
         
         this.setupPointerEvents();
         this.setupKeyboardEvents();
+        // Deck rééquilibre : on repart sur un classement propre.
+        this.persistence.migrerVersDeck(2);
+        // Etat initial du bouton, avant toute interaction.
+        this.appliquerReglageVoix(this.config.currentConfig.cardReading !== false);
         this.declarerSessionAudio();
         this.registerVisibilityHandler();
         
@@ -371,6 +386,22 @@ class App {
         };
         window.addEventListener('pointerdown', startAudio);
         window.addEventListener('keydown', startAudio);
+    }
+
+    /** Applique l'etat de la lecture vocale partout a la fois. */
+    appliquerReglageVoix(actif) {
+        this.config.currentConfig.cardReading = actif;
+        // Sauvegarde du reglage avec les autres preferences.
+        this.persistence.saveSettings?.(this.config.currentConfig);
+        this.ui.lectureActivee = actif;
+        this.ui.lastSyncConfig = { ...(this.ui.lastSyncConfig || {}), cardReading: actif };
+        if (!actif) this.ui.arreterLecture?.();
+        this.home.majBoutonVoix?.(actif);
+        const b = document.getElementById('config-card-reading');
+        if (b) {
+            b.textContent = actif ? 'ON' : 'OFF';
+            b.style.borderColor = actif ? 'var(--gold)' : 'rgba(197,160,89,0.3)';
+        }
     }
 
     /** Ecrit l'etat courant. Appelable a tout moment, sans effet de bord. */
@@ -511,6 +542,14 @@ class App {
     }
 
     async handleGameOver() {
+        // Toute partie terminee entre au classement. Sans cet appel, l'ecran
+        // restait vide quel que soit le nombre de parties.
+        if (this.engine.turn > 0) {
+            this.persistence.saveScore(
+                this.config.currentConfig.playerName || 'Gardien',
+                Math.round(this.engine.score)
+            );
+        }
         // Une partie terminee ouvre le menu complet.
         this.home.appliquerModeDecouverte(this.persistence.getStats().gamesPlayed + 1);
         const isNewRecord = this.engine.score >= this.engine.highScore && this.engine.score > 0;

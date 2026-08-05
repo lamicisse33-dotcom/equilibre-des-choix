@@ -208,6 +208,37 @@ export class PersistenceController {
         return this.data.leaderboard || [];
     }
 
+    /**
+     * Enregistre un score au classement. Anciennement reservee aux duels et
+     * appelee par personne : le classement restait vide en permanence, quel
+     * que soit le nombre de parties jouees.
+     */
+    saveScore(name, score) {
+        return this.saveDuelScore(name, score);
+    }
+
+    /**
+     * Le rééquilibrage du deck rend les anciens scores incomparables : une
+     * meme valeur ne represente plus le meme effort. On purge une seule fois
+     * le classement et le meilleur score, sans toucher aux parties jouees ni
+     * a l'heritage accumule.
+     */
+    migrerVersDeck(version) {
+        const clef = 'equilibre_deck_version';
+        let actuelle = 0;
+        try { actuelle = parseInt(localStorage.getItem(clef) || '0', 10) || 0; } catch (e) {}
+        if (actuelle >= version) return false;
+        this.data.leaderboard = [];
+        this.save(this.STORAGE_KEYS.LEADERBOARD, []);
+        if (this.data.statistics) {
+            this.data.statistics.highestScore = 0;
+            this.save(this.STORAGE_KEYS.STATISTICS, this.data.statistics);
+        }
+        try { localStorage.setItem(clef, String(version)); } catch (e) {}
+        console.log('Classement remis a zero : nouveau equilibrage des cartes.');
+        return true;
+    }
+
     saveDuelScore(name, score) {
         if (!this.data.leaderboard) this.data.leaderboard = [];
         

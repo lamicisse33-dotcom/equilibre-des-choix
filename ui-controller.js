@@ -5,7 +5,6 @@ export class UIController {
         this.callbacks = callbacks;
         this.elements = {
             score: document.getElementById('score-value'),
-            highScore: document.getElementById('high-score-value'),
             turn: document.getElementById('turn-value'),
             gameOver: document.getElementById('game-over'),
             finalScore: document.getElementById('final-score'),
@@ -363,7 +362,6 @@ export class UIController {
         };
 
         updateText('score', gameState.score);
-        updateText('highScore', gameState.highScore);
         updateText('turn', gameState.turn);
         updateText('lifetime', gameState.lifetimeScore);
 
@@ -737,7 +735,12 @@ export class UIController {
 
         if (this.elements.cardTitle) this.elements.cardTitle.textContent = data.title;
         if (this.elements.cardRarity) {
-            this.elements.cardRarity.textContent = (data.rarity || 'common').toUpperCase();
+            // La rarete s'affichait en anglais brut -- COMMON, RARE -- au
+            // milieu d'une interface entierement francaise.
+            const r = data.rarity || 'common';
+            const libelle = this.callbacks.getTranslation(`rarity_${r}`);
+            this.elements.cardRarity.textContent =
+                (libelle && libelle !== `rarity_${r}` ? libelle : r).toUpperCase();
             this.elements.cardRarity.style.color = data.color || 'var(--gold)';
             
             // Special legendary feedback

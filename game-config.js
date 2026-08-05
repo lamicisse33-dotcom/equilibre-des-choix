@@ -187,7 +187,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Croire en l'invisible pour voir le possible.", 
-        effects: { spirituality: 20, love: 5, health: 5, money: -10 } 
+        effects: { spirituality: 20, love: 5, health: 5, money: -24 } 
     },
     { 
         title: "Oraison Silencieuse", 
@@ -197,7 +197,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Un moment de dialogue avec le divin ou soi-même.", 
-        effects: { spirituality: 15, love: -5, health: 10, money: 0 } 
+        effects: { spirituality: 15, love: -19, health: 10 } 
     },
     { 
         title: "Acte de Pardon", 
@@ -207,7 +207,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Libérer son cœur du poids de la rancœur.", 
-        effects: { spirituality: 15, love: 25, health: 5, money: -15 } 
+        effects: { spirituality: 15, love: 25, health: -2, money: -30 } 
     },
     { 
         title: "Sagesse Ancestrale", 
@@ -217,7 +217,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Écouter les leçons du passé pour éclairer le futur.", 
-        effects: { spirituality: 20, love: 10, health: 0, money: -5 } 
+        effects: { spirituality: 20, love: 10, money: -24 } 
     },
     { 
         title: "Leçon de Patience", 
@@ -227,7 +227,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Attendre que l'eau se calme pour voir le fond.", 
-        effects: { spirituality: 10, love: 5, health: 15, money: -5 } 
+        effects: { spirituality: 10, love: 5, health: 15, money: -23 } 
     },
     { 
         title: "Don de Charité", 
@@ -237,7 +237,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Le partage est le plus court chemin vers la paix.", 
-        effects: { spirituality: 25, love: 15, health: 0, money: -30 } 
+        effects: { spirituality: 25, love: 15, health: -2, money: -30 } 
     },
     { 
         title: "Rituel de Gratitude", 
@@ -247,7 +247,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Reconnaître la beauté dans les moindres choses.", 
-        effects: { spirituality: 15, love: 15, health: 10, money: -5 } 
+        effects: { spirituality: 15, love: 15, health: 5, money: -26 } 
     },
 
     // money
@@ -259,7 +259,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "Gagner plus, stresser plus.", 
-        effects: { spirituality: -15, love: -10, health: -15, money: 35 } 
+        effects: { spirituality: -11, love: -7, health: -11, money: 26 } 
     },
     { 
         title: "Nouvelle Entreprise", 
@@ -269,7 +269,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "Risque élevé, récompense élevée.", 
-        effects: { spirituality: -10, love: -15, health: -15, money: 45 } 
+        effects: { spirituality: -7, love: -10, health: -10, money: 30 } 
     },
     { 
         title: "Gain au Loto", 
@@ -279,7 +279,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "De la chance pure.", 
-        effects: { spirituality: -5, love: 5, health: 0, money: 50 } 
+        effects: { spirituality: -34, love: 4, money: 36 } 
     },
     { 
         title: "Investissement Sûr", 
@@ -289,7 +289,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "La patience paye enfin.", 
-        effects: { spirituality: -5, love: 0, health: -5, money: 20 } 
+        effects: { spirituality: -10, health: -5, money: 20 } 
     },
     { 
         title: "Marché Boursier", 
@@ -299,7 +299,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "Spéculation audacieuse.", 
-        effects: { spirituality: -5, love: 0, health: -5, money: 30 } 
+        effects: { spirituality: -19, health: -5, money: 30 } 
     },
     { 
         title: "Héritage Inattendu", 
@@ -309,7 +309,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "Un souffle financier.", 
-        effects: { spirituality: -10, love: 10, health: 0, money: 25 } 
+        effects: { spirituality: -28, love: 10, money: 25 } 
     },
 
     // love
@@ -321,7 +321,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "L'ancrage dans le sang et l'histoire.", 
-        effects: { spirituality: 10, love: 20, health: 0, money: -15 } 
+        effects: { spirituality: 10, love: 20, money: -23 } 
     },
     { 
         title: "Noces de Destin", 
@@ -331,7 +331,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "Fusion de deux âmes en un seul chemin.", 
-        effects: { spirituality: 0, love: 30, health: 0, money: -20 } 
+        effects: { love: 30, money: -24 } 
     },
     { 
         title: "Lien d'Amitié", 
@@ -341,7 +341,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "Des frères et sœurs choisis par le cœur.", 
-        effects: { spirituality: 5, love: 15, health: 5, money: -10 } 
+        effects: { spirituality: 5, love: 15, health: 5, money: -19 } 
     },
     { 
         title: "Rire d'Enfant", 
@@ -361,7 +361,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "Porter le fardeau d'autrui pour s'alléger soi-même.", 
-        effects: { spirituality: 15, love: 20, health: 0, money: -20 } 
+        effects: { spirituality: 15, love: 20, money: -26 } 
     },
     { 
         title: "Parole de Respect", 
@@ -371,7 +371,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "Reconnaître la dignité en chaque être.", 
-        effects: { spirituality: 10, love: 15, health: 5, money: -10 } 
+        effects: { spirituality: 10, love: 15, health: 5, money: -24 } 
     },
     { 
         title: "Pacte de Fidélité", 
@@ -381,7 +381,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "Tenir sa promesse quand tout le reste vacille.", 
-        effects: { spirituality: 20, love: 35, health: 0, money: -15 } 
+        effects: { spirituality: 20, love: 35, health: -11, money: -36 } 
     },
 
     // health
@@ -393,7 +393,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Ce que vous mangez devient ce que vous êtes.", 
-        effects: { spirituality: 5, love: 0, health: 20, money: -15 } 
+        effects: { spirituality: 5, health: 20, money: -19 } 
     },
     { 
         title: "Souffle du Corps", 
@@ -403,7 +403,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Le mouvement est le moteur de la vitalité.", 
-        effects: { spirituality: -10, love: 10, health: 25, money: -10 } 
+        effects: { spirituality: -18, love: 10, health: 25, money: -10 } 
     },
     { 
         title: "Repos de l'Esprit", 
@@ -413,7 +413,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Le silence du sommeil guérit l'âme.", 
-        effects: { spirituality: 15, love: -10, health: 20, money: 0 } 
+        effects: { spirituality: 15, love: -26, health: 20 } 
     },
     { 
         title: "Soin Réparateur", 
@@ -423,7 +423,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Réparer les brèches du temple physique.", 
-        effects: { spirituality: -5, love: 0, health: 30, money: -25 } 
+        effects: { spirituality: -5, health: 30, money: -25 } 
     },
     { 
         title: "Rituel de Clarté", 
@@ -433,7 +433,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "L'ordre extérieur reflète le calme intérieur.", 
-        effects: { spirituality: 10, love: 0, health: 15, money: -10 } 
+        effects: { spirituality: 10, health: 15, money: -19 } 
     },
     { 
         title: "Flux Vital", 
@@ -443,7 +443,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Une force nouvelle circule dans vos veines.", 
-        effects: { spirituality: -10, love: 15, health: 35, money: 0 } 
+        effects: { spirituality: -36, love: 15, health: 35, money: -7 } 
     },
     { 
         title: "Veille Vigilante", 
@@ -453,7 +453,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Prévoir le mal pour mieux le prévenir.", 
-        effects: { spirituality: 10, love: -5, health: 20, money: -15 } 
+        effects: { spirituality: 10, love: -5, health: 20, money: -19 } 
     },
 
     // mixed
@@ -465,7 +465,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/harmony_art.webp",
         desc: "Un moment de clarté absolue qui réaligne toute existence.", 
-        effects: { spirituality: 20, love: 20, health: 20, money: 20 } 
+        effects: { spirituality: 18, love: 18, health: 18, money: -42 } 
     },
     { 
         title: "L'Oeil du Cyclone", 
@@ -475,7 +475,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/legendary_spirit_art.webp",
         desc: "Au centre du chaos, la paix absolue est trouvée.", 
-        effects: { spirituality: 50, love: 15, health: 15, money: -25 } 
+        effects: { spirituality: 42, love: -8, health: 13, money: -42 } 
     },
     { 
         title: "Pacte d'Éternité", 
@@ -485,7 +485,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/legendary_love_art.webp",
         desc: "Un serment qui transcende le temps et l'espace.", 
-        effects: { love: 50, spirituality: 20, health: 20, money: -40 } 
+        effects: { spirituality: -11, love: 42, health: 17, money: -42 } 
     },
     { 
         title: "Arbre de Lumière", 
@@ -495,7 +495,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/legendary_wealth_art.webp",
         desc: "La prospérité fleurit dans la clarté de l'esprit.", 
-        effects: { money: 60, spirituality: 25, love: -20, health: -15 } 
+        effects: { spirituality: 18, love: -42, health: -12, money: 42 } 
     },
     { 
         title: "Souffle de Gaïa", 
@@ -505,7 +505,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/legendary_life_art.webp",
         desc: "La vie elle-même coule à nouveau dans vos veines.", 
-        effects: { health: 60, love: 25, spirituality: -20, money: -15 } 
+        effects: { spirituality: -42, love: 18, health: 42, money: -12 } 
     },
     // Special Cards
     {
@@ -516,7 +516,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Élargissez votre regard sur le futur. (Prochain tour : 4 choix)",
-        effects: { spirituality: 10, love: 0, health: 0, money: -10 },
+        effects: { spirituality: 10, money: -10 },
         specialEffect: "extra_choice"
     },
     {
@@ -527,7 +527,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-health-minimal.webp",
         art: "assets/health_art.webp",
         desc: "Une protection divine. Immunité au prochain tour.",
-        effects: { spirituality: 0, love: 0, health: 15, money: -15 },
+        effects: { health: 15, money: -15 },
         specialEffect: "protection"
     },
     {
@@ -538,7 +538,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-money-minimal.webp",
         art: "assets/money_art.webp",
         desc: "L'abondance appelle l'abondance. (Prochain tour : Effets x2)",
-        effects: { spirituality: -10, love: 0, health: -5, money: 20 },
+        effects: { spirituality: -11, health: -5, money: 20 },
         specialEffect: "multiplier"
     },
     {
@@ -549,7 +549,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-love-minimal.webp",
         art: "assets/love_art.webp",
         desc: "Chassez les ombres du passé. Main renouvelée.",
-        effects: { spirituality: 5, love: 15, health: 0, money: -10 },
+        effects: { spirituality: 5, love: 15, money: -16 },
         specialEffect: "refresh"
     },
     {
@@ -560,7 +560,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/spirituality_art.webp",
         desc: "Une épreuve de foi. (Draine tous les piliers de 10 au prochain tour)",
-        effects: { spirituality: 40, love: -10, health: -10, money: -10 },
+        effects: { spirituality: 36, love: -13, health: -9, money: -9 },
         specialEffect: "corruption"
     },
     {
@@ -571,7 +571,7 @@ export const SCENARIOS = [
         icon: "assets/icon-pillar-spirituality-minimal.webp",
         art: "assets/harmony_art.webp",
         desc: "Un état de pureté où chaque souffle est une éternité.",
-        effects: { spirituality: 45, love: 45, health: 45, money: 45 }
+        effects: { spirituality: 45, love: 45, health: -36, money: -45 }
     }
 ];
 
