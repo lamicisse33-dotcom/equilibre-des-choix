@@ -15,7 +15,7 @@ export class SceneManager {
     static BASE_DIST = 7.74;  // distance camera -> point de vise en jeu
     static BASE_OFFSET = { y: 4.2, z: 6.5 };
     static MARGE = 0.12;      // marge de securite laterale
-    static BORD_MAX = 0.94;   // occupation laterale maximale, en coordonnees normalisees
+    static BORD_MAX = 0.98;   // occupation laterale maximale, en coordonnees normalisees
     static MIN_FOV = 45;      // cadrage d'origine, conserve sur desktop
     static MIN_FOV_COURT = 30; // ecran bas (telephone couche) : on resserre
     static MAX_FOV = 58;      // au-dela la perspective se deforme
@@ -61,6 +61,23 @@ export class SceneManager {
     /** Rangee centree de n emplacements, dans le repere de TableController. */
     static slotsPour(n, table) {
         const aspect = window.innerWidth / window.innerHeight;
+        // Carrousel : les cartes sont a taille pleine, regulierement espacees,
+        // et la rangee deborde volontairement de l'ecran. C'est le balayage qui
+        // amene chacune au centre.
+        const ref0 = table.getCardSlot(1);
+        const lift0 = CardController.LIFT_Y;
+        if (CardController.estCarrousel(aspect)) {
+            const pas = CardController.pasCarrousel();
+            return Array.from({ length: n }, (_, i) =>
+                new THREE.Vector3((i - (n - 1) / 2) * pas, ref0.y + lift0, ref0.z));
+        }
+        // Portrait : rangee resserree au maximum, les trois cartes visibles et
+        // aussi grandes que la largeur le permet.
+        if (aspect < 0.85) {
+            const pas = CardController.PAS_PORTRAIT;
+            return Array.from({ length: n }, (_, i) =>
+                new THREE.Vector3((i - (n - 1) / 2) * pas, ref0.y + lift0, ref0.z));
+        }
         // Relevage : la carte, plus haute et posee au meme angle, s'enfoncerait
         // dans le tapis. On remonte la rangee sans toucher a TableController.
         const lift = CardController.LIFT_Y;
@@ -83,9 +100,17 @@ export class SceneManager {
 
     /** Demi-largeur reellement occupee par la rangee, marge comprise. */
     static halfWidthNeeded(aspect, n = 3) {
-        const portrait = aspect < 0.85;          // meme regle que CardController
-        const spread = portrait ? 0.68 : 1.0;
-        const scale = portrait ? 0.92 : 1.0;
+        // En carrousel, seule la carte centrale doit tenir dans le cadre : les
+        // voisines depassent expres, ce qui montre qu'il y a autre chose a voir.
+        if (CardController.estCarrousel(aspect)) {
+            return CardController.CARD_W / 2 + 0.30;
+        }
+        if (aspect < 0.85) {
+            const pas = CardController.PAS_PORTRAIT;
+            return pas * (n - 1) / 2 + CardController.CARD_W / 2 + SceneManager.MARGE;
+        }
+        const spread = 1.0;
+        const scale = 1.0;
         const demiRangee = n <= 1
             ? 0
             : (SceneManager.ecartementBase(n, aspect) * (n - 1)) / 2;
@@ -564,20 +589,36 @@ export class SceneManager {
         // joueur : c'est elle qui sortait par les cotes. On projette donc les
         // points les plus extremes avec la vraie camera, et on elargit le champ
         // jusqu'a ce qu'ils rentrent.
-        for (let i = 0; i < 8; i++) {
+        // La correction est symetrique : on elargit si la rangee deborde, mais
+        // on resserre aussi si elle laisse de la marge. Ne corriger que les
+        // debordements laissait jusqu'a 15 % de largeur inutilisee, donc des
+        // cartes plus petites que necessaire.
+        const partHaut = ecranBas ? SceneManager.PART_HAUTEUR_COURT : SceneManager.PART_HAUTEUR;
+        for (let i = 0; i < 12; i++) {
             const debord = this.debordementLateral(fov, dist, aspect);
-            if (debord === null || debord <= SceneManager.BORD_MAX) break;
-            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (debord / SceneManager.BORD_MAX);
-            const nouveauFov = THREE.MathUtils.radToDeg(Math.atan(t) * 2);
-            if (nouveauFov <= SceneManager.MAX_FOV) {
-                if (nouveauFov <= fov + 0.01) break;
+            if (debord === null || debord < 0.05) break;
+            const ecart = debord / SceneManager.BORD_MAX;
+            if (Math.abs(ecart - 1) < 0.006) break;
+
+            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * ecart;
+            let nouveauFov = THREE.MathUtils.radToDeg(Math.atan(t) * 2);
+            nouveauFov = Math.min(SceneManager.MAX_FOV, Math.max(SceneManager.MIN_FOV, nouveauFov));
+
+            if (Math.abs(nouveauFov - fov) > 0.05) {
                 fov = nouveauFov;
             } else {
-                // Champ au maximum : on recule la camera.
-                fov = SceneManager.MAX_FOV;
-                const nouveau = dist * (debord / SceneManager.BORD_MAX);
-                if (nouveau <= dist + 0.01) break;
-                dist = nouveau;
+                // Champ deja a la borne : on joue sur la distance.
+                const nouveau = dist * ecart;
+                if (Math.abs(nouveau - dist) < 0.01) break;
+                dist = Math.max(SceneManager.AVANCEE + 1.5, nouveau);
+            }
+
+            // Le resserrement ne doit pas faire deborder la rangee par le haut
+            // ou par le bas : on repasse la garde de hauteur.
+            const emprise = this.empriseRangee(fov, dist);
+            if (emprise !== null && emprise > partHaut) {
+                const t2 = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / partHaut);
+                fov = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(t2) * 2));
             }
         }
 
@@ -630,8 +671,14 @@ export class SceneManager {
         const y = slot.y + CardController.LIFT_Y, z = slot.z;
         const demi = (CardController.CARD_W * l.scale) / 2;
         const demiSel = demi * CardController.SELECT_SCALE;
-        const xRepos = SceneManager.SLOT_X * l.spread + demi;
-        const xSel = SceneManager.SLOT_X * l.spread + demiSel;
+        // En carrousel on ne mesure que la carte centree : les voisines
+        // debordent volontairement.
+        const carrousel = CardController.estCarrousel(aspect);
+        const base = carrousel ? 0
+                   : (aspect < 0.85 ? CardController.PAS_PORTRAIT
+                                    : SceneManager.SLOT_X * l.spread);
+        const xRepos = base + demi;
+        const xSel = base + demiSel;
 
         const ratio = dist / SceneManager.BASE_DIST;
         const descente = this.calculerDescente(fov, dist);

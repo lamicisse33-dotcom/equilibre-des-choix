@@ -170,6 +170,18 @@ class App {
                 }
             },
             getTranslation: (key) => this.config.getTranslation(key),
+            // La synthese vocale d'iOS se tait des qu'une autre source audio
+            // joue : on efface la musique le temps de l'enonce.
+            onLectureDebut: () => {
+                if (this._musiqueBaissee) return;
+                this._musiqueBaissee = true;
+                this.audio.fadeBGM(0, 220);
+            },
+            onLectureFin: () => {
+                if (!this._musiqueBaissee) return;
+                this._musiqueBaissee = false;
+                if (!this.isPaused) this.audio.fadeBGM(1.0, 600, this.engine.turn);
+            },
             onRestart: () => this.restartGame(),
             onRestartHover: () => this.audio.playSFX('ui-click-sfx', 0.1),
             onResetData: async () => {
@@ -297,6 +309,7 @@ class App {
         
         this.setupPointerEvents();
         this.setupKeyboardEvents();
+        this.declarerSessionAudio();
         this.registerVisibilityHandler();
         
         // L'ecran de chargement est retire par SceneManager, quand textures ET
@@ -346,6 +359,7 @@ class App {
             // Meme contrainte que pour l'audio : Safari exige que la synthese
             // vocale soit amorcee dans un geste de l'utilisateur.
             this.ui.deverrouillerVoix?.();
+            this.declarerSessionAudio();
             this.ui.prechargerVoix?.();
             
             if (this.isMobile && document.documentElement.requestFullscreen) {
@@ -369,6 +383,17 @@ class App {
         } catch (e) {
             console.warn('Sauvegarde impossible', e);
         }
+    }
+
+    /**
+     * Safari 17+ : declare que la page produit du son de lecture. Sans cette
+     * indication, la synthese vocale peut etre releguee sur un canal muet des
+     * qu'une musique joue. Pose au demarrage et rappelee au premier contact.
+     */
+    declarerSessionAudio() {
+        try {
+            if (navigator.audioSession) navigator.audioSession.type = 'playback';
+        } catch (e) { /* non supporte */ }
     }
 
     registerVisibilityHandler() {
@@ -437,6 +462,13 @@ class App {
         cards = this.narrative.injectNarrativeCards(cards);
         
         this.scene.createCardMeshes(cards);
+        // Reperes du carrousel : autant de points que de cartes, le point
+        // allonge marquant celle qui est centree.
+        const cc = this.scene.cardController;
+        if (cc) {
+            cc.onCarteActive = (i, n) => this.ui.majReperesCarrousel(i, n);
+            this.ui.majReperesCarrousel(cc.indexActif, cards.length);
+        }
 
         // Update UI with refresh availability if needed
         if (this.engine.activeModifiers.refreshAvailable) {
@@ -512,7 +544,34 @@ class App {
 
     setupPointerEvents() {
         window.addEventListener('pointermove', (e) => this.handlePointer(e, 'move'));
-        window.addEventListener('pointerdown', (e) => this.handlePointer(e, 'click'));
+
+        // --- Balayage du carrousel ---
+        // En portrait les cartes sont affichees en grand, une a la fois. Un
+        // glissement horizontal fait defiler la rangee ; un simple appui, sans
+        // glissement, reste un choix de carte.
+        this._geste = null;
+        window.addEventListener('pointerdown', (e) => {
+            this._geste = { x: e.clientX, y: e.clientY, t: Date.now(), glisse: false };
+        });
+        window.addEventListener('pointermove', (e) => {
+            const g = this._geste;
+            if (!g || g.glisse) return;
+            const dx = e.clientX - g.x, dy = e.clientY - g.y;
+            if (Math.abs(dx) > 28 && Math.abs(dx) > Math.abs(dy) * 1.4) {
+                g.glisse = true;
+                if (this.carrouselActif()) {
+                    this.scene.cardController.deplacerCarrousel(dx < 0 ? 1 : -1);
+                    this.audio.playSFX('card-hover-sfx', 0.12);
+                }
+            }
+        });
+        window.addEventListener('pointerup', (e) => {
+            const g = this._geste;
+            this._geste = null;
+            if (!g || g.glisse) return;              // c'etait un balayage
+            this.handlePointer(e, 'click');
+        });
+        window.addEventListener('pointercancel', () => { this._geste = null; });
 
         // Right-click / secondary button flips a card for inspection (reveals the
         // ornate back). Suppress the browser context menu over the game canvas.
@@ -561,6 +620,11 @@ class App {
                 }
             }
 
+            if ((e.code === 'ArrowLeft' || e.code === 'ArrowRight') && this.carrouselActif()) {
+                this.scene.cardController.deplacerCarrousel(e.code === 'ArrowRight' ? 1 : -1);
+                return;
+            }
+
             if (e.code === 'Escape' && this.selectedCard) {
                 this.scene.cardController.deselect(this.selectedCard);
                 this.scene.resetCamera();
@@ -568,6 +632,12 @@ class App {
                 this.ui.showCardInfo(null);
             }
         });
+    }
+
+    /** Le carrousel n'est actif qu'en portrait, avec des cartes en jeu. */
+    carrouselActif() {
+        const cc = this.scene && this.scene.cardController;
+        return !!(cc && cc.cards.length > 1 && cc.indexActif !== null && cc.indexActif !== undefined);
     }
 
     handlePointer(event, type) {

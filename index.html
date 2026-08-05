@@ -203,7 +203,7 @@
 
         #card-title {
             font-family: var(--font-serif);
-            font-size: 1.4rem;
+            font-size: 1.6rem;
             color: var(--gold-bright);
             margin-bottom: 12px;
             letter-spacing: 2px;
@@ -211,16 +211,16 @@
         }
 
         #card-desc {
-            font-size: 0.95rem;
-            line-height: 1.7;
-            opacity: 0.85;
+            font-size: 1.1rem;
+            line-height: 1.55;
+            opacity: 0.95;
             margin-bottom: 22px;
             font-weight: 400; /* Increased for better legibility */
             color: #ffffff;
         }
 
         #card-effects {
-            font-size: 0.75rem;
+            font-size: 0.95rem;
             display: flex;
             justify-content: center;
             gap: 15px;
@@ -553,17 +553,19 @@
                 bottom: 80px;
                 padding: 12px 16px 14px;
             }
-            #card-info #card-rarity { margin-bottom: 2px; font-size: 0.55rem; }
-            #card-info #card-title { font-size: 1rem; margin-bottom: 5px; }
-            #card-info #card-desc { font-size: 0.8rem; margin-bottom: 7px; line-height: 1.35; }
-            #card-info #card-effects { font-size: 0.74rem; line-height: 1.5; }
-            #card-info #speech-stop-btn { margin-top: 7px; padding: 5px 12px; font-size: 0.56rem; }
-            #card-info .confirm-hint { margin-top: 6px !important; font-size: 0.55rem !important; }
+            /* Ecritures agrandies : la fenetre a la place, la scene ayant ete
+               remontee. La lisibilite prime sur la compacite. */
+            #card-info #card-rarity { margin-bottom: 4px; font-size: 0.7rem; letter-spacing: 3px; }
+            #card-info #card-title { font-size: 1.32rem; margin-bottom: 8px; }
+            #card-info #card-desc { font-size: 1.02rem; margin-bottom: 10px; line-height: 1.45; opacity: 1; }
+            #card-info #card-effects { font-size: 0.95rem; line-height: 1.7; gap: 12px; }
+            #card-info #speech-stop-btn { margin-top: 10px; padding: 7px 14px; font-size: 0.68rem; }
+            #card-info .confirm-hint { margin-top: 10px !important; font-size: 0.68rem !important; opacity: 0.55 !important; }
             #card-title {
-                font-size: 1.1rem;
+                font-size: 1.32rem;
             }
             #card-desc {
-                font-size: 0.8rem;
+                font-size: 1.02rem;
                 margin-bottom: 10px;
             }
             .logo-text {
@@ -790,6 +792,48 @@
             #update-banner { gap: 10px; padding: 10px 14px; bottom: 14px; }
             #update-banner .texte { font-size: 0.62rem; letter-spacing: 1px; }
             #update-banner .action { font-size: 0.6rem; padding: 6px 12px; }
+        }
+
+        /* --- REPERES DU CARROUSEL --- */
+        #carousel-dots {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            display: none;
+            gap: 10px;
+            align-items: center;
+            pointer-events: none;
+            z-index: 26;
+        }
+        #carousel-dots .point {
+            width: 7px; height: 7px;
+            border-radius: 50%;
+            background: rgba(197, 160, 89, 0.3);
+            border: 1px solid rgba(197, 160, 89, 0.5);
+            transition: all 0.3s;
+        }
+        #carousel-dots .point.actif {
+            background: var(--gold-bright);
+            width: 20px;
+            border-radius: 4px;
+        }
+        #carousel-hint {
+            position: absolute;
+            left: 50%;
+            transform: translateX(-50%);
+            font-family: var(--font-serif);
+            font-size: 0.6rem;
+            letter-spacing: 2px;
+            color: var(--gold);
+            opacity: 0.5;
+            pointer-events: none;
+            z-index: 26;
+            white-space: nowrap;
+            display: none;
+        }
+        @media (max-aspect-ratio: 85/100) {
+            #carousel-dots { display: flex; bottom: 116px; }
+            #carousel-hint { display: block; bottom: 138px; }
         }
 
         .hidden {
@@ -1545,9 +1589,11 @@
             <div id="card-effects"></div>
             <!-- Lecture vocale : demarre a l'ouverture du panneau, ce bouton
                  l'interrompt. Il n'apparait que pendant la lecture. -->
+            <!-- Bouton a deux visages : arret pendant la lecture, ou commande
+                 manuelle si le navigateur a refuse la lecture automatique. -->
             <div id="speech-stop-btn" class="hidden" style="pointer-events: auto; cursor: pointer; margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-serif); font-size: 0.62rem; letter-spacing: 2px; color: var(--gold); border: 1px solid var(--gold); padding: 6px 14px; border-radius: 2px; background: rgba(0,0,0,0.4);">
                 <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-                <span data-i18n="stop_speech">ARRÊTER LA LECTURE</span>
+                <span>ARRÊTER LA LECTURE</span>
             </div>
             <div class="confirm-hint" style="font-family: var(--font-serif); font-size: 0.65rem; margin-top: 20px; opacity: 0.4; letter-spacing: 2px; text-transform: uppercase;" data-i18n="confirm_click">Confirmer par un second clic</div>
         </div>
@@ -1555,6 +1601,10 @@
 
     <!-- Initiation : n'apparait qu'a la toute premiere partie -->
     <!-- Bandeau de mise a jour : apparait quand une nouvelle version est prete -->
+    <!-- Reperes du carrousel : position dans la main, et rappel du geste -->
+    <div id="carousel-hint" data-i18n="swipe_hint">← BALAYEZ POUR VOIR LES AUTRES →</div>
+    <div id="carousel-dots"></div>
+
     <div id="update-banner">
         <span class="texte" data-i18n="maj_dispo">Nouvelle version disponible</span>
         <span class="action" id="update-apply" data-i18n="maj_appliquer">METTRE À JOUR</span>

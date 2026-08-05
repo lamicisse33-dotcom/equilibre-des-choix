@@ -23,6 +23,8 @@ export class UIController {
             tutorialNext: document.getElementById('tutorial-next'),
             tutorialSkip: document.getElementById('tutorial-skip'),
             perilAlert: document.getElementById('peril-alert'),
+            carouselDots: document.getElementById('carousel-dots'),
+            carouselHint: document.getElementById('carousel-hint'),
             gameOverCause: document.getElementById('game-over-cause'),
             harmonyBadge: document.getElementById('harmony-badge'),
             settingsBtn: document.getElementById('settings-btn'),
@@ -193,6 +195,14 @@ export class UIController {
 
         this.elements.speechStopBtn?.addEventListener('click', (e) => {
             e.stopPropagation();
+            if (this.modeBouton === 'lire') {
+                // Geste direct de l'utilisateur : Safari l'accepte toujours.
+                this.lectureCoupee = false;
+                this.voixDeverrouillee = false;
+                this.deverrouillerVoix();
+                if (this.carteAffichee) this.lireCarte(this.carteAffichee);
+                return;
+            }
             this.lectureCoupee = true;   // silence jusqu'a la prochaine carte
             this.arreterLecture();
         });
@@ -433,15 +443,22 @@ export class UIController {
         if (this.voixDeverrouillee || !('speechSynthesis' in window)) return;
         this.voixDeverrouillee = true;
         try {
-            const vide = new SpeechSynthesisUtterance(' ');
-            vide.volume = 0;
-            window.speechSynthesis.speak(vide);
+            // Un enonce a volume 0 ou reduit a une espace est ignore par
+            // certains moteurs, et ne deverrouille alors rien du tout.
+            const amorce = new SpeechSynthesisUtterance('a');
+            amorce.volume = 0.01;
+            amorce.lang = 'fr-FR';
+            window.speechSynthesis.resume();
+            window.speechSynthesis.speak(amorce);
         } catch (e) {
             console.warn('Synthese vocale indisponible', e);
         }
     }
 
     lireCarte(data) {
+        // Etat propre : le bouton ne reapparait qu'une fois la voix partie,
+        // ou si le navigateur refuse la lecture automatique.
+        this.montrerBouton('aucun');
         if (!('speechSynthesis' in window) || !data) return;
         this.deverrouillerVoix();
         if (this.lectureCoupee) return;
@@ -459,22 +476,39 @@ export class UIController {
         u.pitch = 1.0;
 
         // Voix francaise si le systeme en propose une.
-        // getVoices() est vide tant que le systeme n'a pas fini de charger la
-        // liste : on se rabat alors sur la langue declaree, qui suffit.
-        const voix = (window.speechSynthesis.getVoices() || [])
-            .filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
-        if (voix.length) u.voice = voix[0];
+        // On n'impose pas d'objet voice : sur iOS la liste retournee par
+        // getVoices() est souvent perimee, et affecter une voix invalide rend
+        // l'enonce silencieux. La langue declaree suffit au systeme pour
+        // choisir. On ne force une voix que si le systeme en confirme une, et
+        // jamais sur iOS.
+        const iOS = /iPad|iPhone|iPod/.test(navigator.userAgent || '');
+        if (!iOS) {
+            const voix = (window.speechSynthesis.getVoices() || [])
+                .filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
+            if (voix.length) u.voice = voix[0];
+        }
 
         const synth = window.speechSynthesis;
 
         // Le bouton n'apparait qu'une fois la voix reellement partie. Il etait
         // affiche d'avance : quand la synthese etait bloquee, il restait la
         // sans qu'aucun son ne sorte.
-        u.onstart = () => { if (this.utteranceEnCours === u) this.montrerArret(true); };
+        u.onstart = () => {
+            if (this.utteranceEnCours !== u) return;
+            this.montrerBouton('arret');
+            // Sur iOS, la synthese se tait purement et simplement quand une
+            // autre source audio joue. On efface la musique pendant l'enonce.
+            this.callbacks.onLectureDebut?.();
+        };
         u.onend = () => { if (this.utteranceEnCours === u) this.arreterLecture(); };
         u.onerror = () => { if (this.utteranceEnCours === u) this.arreterLecture(); };
 
         this.utteranceEnCours = u;
+
+        // Sur iOS la musique doit s'effacer AVANT l'appel, pas a l'evenement
+        // onstart : si le canal est occupe, l'enonce ne demarre jamais et
+        // onstart ne se declenche donc pas.
+        this.callbacks.onLectureDebut?.();
 
         // Safari se met parfois en pause de lui-meme et n'en sort pas seul.
         if (synth.paused) synth.resume();
@@ -492,7 +526,9 @@ export class UIController {
                 try { synth.speak(u); } catch (e) { /* synthese indisponible */ }
                 setTimeout(() => {
                     if (this.utteranceEnCours === u && !synth.speaking && !synth.pending) {
-                        this.montrerArret(false);   // decidement muet
+                        // Le navigateur refuse la lecture automatique : on
+                        // propose au joueur de la declencher lui-meme.
+                        this.montrerBouton('lire');
                     }
                 }, 800);
             }
@@ -517,6 +553,7 @@ export class UIController {
         window.speechSynthesis.cancel();
         this.utteranceEnCours = null;
         this.montrerArret(false);
+        this.callbacks.onLectureFin?.();
     }
 
     /**
@@ -531,9 +568,52 @@ export class UIController {
         if (this.dernierPillars) this.majPeril(this.dernierPillars);
     }
 
+    /**
+     * Le bouton a deux visages :
+     *   'arret' pendant la lecture,
+     *   'lire'  quand la lecture automatique a ete refusee par le navigateur.
+     * Safari n'autorise la synthese que dans un geste de l'utilisateur ; si
+     * l'appel automatique echoue, ce bouton offre ce geste. Il ne peut pas
+     * etre refuse.
+     */
+    /**
+     * Points du carrousel. Ils n'apparaissent qu'en portrait, ou les cartes
+     * defilent une a une ; le CSS s'en charge, on ne remplit que le contenu.
+     */
+    majReperesCarrousel(index, total) {
+        const zone = this.elements.carouselDots;
+        if (!zone) return;
+        if (index === null || index === undefined || !total || total < 2) {
+            zone.innerHTML = '';
+            if (this.elements.carouselHint) this.elements.carouselHint.style.opacity = '0';
+            return;
+        }
+        if (this.elements.carouselHint) this.elements.carouselHint.style.opacity = '0.5';
+        let html = '';
+        for (let i = 0; i < total; i++) {
+            html += `<div class="point${i === index ? ' actif' : ''}"></div>`;
+        }
+        zone.innerHTML = html;
+    }
+
+    montrerBouton(mode) {
+        const b = this.elements.speechStopBtn;
+        if (!b) return;
+        this.modeBouton = mode;
+        b.classList.toggle('hidden', mode === 'aucun');
+        const libelle = b.querySelector('span');
+        const icone = b.querySelector('svg');
+        if (mode === 'arret') {
+            if (libelle) libelle.textContent = this.callbacks.getTranslation('stop_speech');
+            if (icone) icone.innerHTML = '<rect x="6" y="6" width="12" height="12" rx="1"/>';
+        } else if (mode === 'lire') {
+            if (libelle) libelle.textContent = this.callbacks.getTranslation('read_aloud');
+            if (icone) icone.innerHTML = '<path d="M8 5v14l11-7z"/>';
+        }
+    }
+
     montrerArret(visible) {
-        if (!this.elements.speechStopBtn) return;
-        this.elements.speechStopBtn.classList.toggle('hidden', !visible);
+        this.montrerBouton(visible ? 'arret' : 'aucun');
     }
 
     /**
@@ -691,6 +771,7 @@ export class UIController {
 
         // Lecture automatique. Relancee a chaque nouvelle carte presentee ;
         // une carte deja lue n'est pas repetee tant qu'on reste dessus.
+        this.carteAffichee = data;
         if (this.derniereCarteLue !== data.id) {
             this.derniereCarteLue = data.id;
             this.lectureCoupee = false;   // une nouvelle carte relance la voix

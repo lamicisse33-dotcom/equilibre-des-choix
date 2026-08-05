@@ -32,8 +32,12 @@ export class CardController {
     // Deplacement d'une carte a la selection. SceneManager en tient compte
     // dans le cadrage : la carte avance vers le joueur et grossit, donc elle
     // occupe bien plus de largeur a l'ecran que les deux autres.
-    static SELECT_Z = 0.75;               // pire cas : carte legendaire ou mythique
-    static SELECT_SCALE = 1.16;           // idem
+    // La carte selectionnee ne fonce plus vers l'ecran : vue de plus pres,
+    // elle obligeait a elargir le champ, ce qui rapetissait toute la rangee de
+    // 25 %. Elle se souleve, se redresse et s'illumine -- l'emphase reste, la
+    // place gagnee revient aux trois cartes.
+    static SELECT_Z = 0;
+    static SELECT_SCALE = 1.08;
 
     // Espace de conception de la face. Le rendu se fait a RES fois cette
     // taille : la resolution de texture monte sans toucher aux coordonnees.
@@ -45,14 +49,48 @@ export class CardController {
     // le tapis. On releve la rangee d'autant.
     static LIFT_Y = 0.284;
 
+    // Position de la rangee sur l'axe horizontal, en mode carrousel.
+    // 0 = premiere carte centree, 1 = deuxieme, etc.
+    static INDEX_DEPART = 1;
+
     /**
      * Gabarit de la rangee selon le ratio d'ecran. SceneManager s'appuie
      * dessus pour calculer le cadrage : la regle doit rester identique a celle
      * appliquee dans createCards, sinon l'optique et la disposition divergent.
      */
+    /**
+     * En portrait, les trois cartes cote a cote plafonnaient a 88 px de large.
+     * On passe en carrousel : une carte centree a taille pleine, les voisines
+     * qui depassent de part et d'autre, et un balayage pour naviguer.
+     */
+    // Interrupteur : passer a true pour revenir au carrousel, ou une seule
+    // carte occupe l'ecran et les voisines depassent. Les cartes y font 295 px
+    // de large sur iPhone, contre 119 avec les trois visibles.
+    static CARROUSEL = false;
+
+    static estCarrousel(aspect) {
+        return CardController.CARROUSEL && aspect < 0.85;
+    }
+
+    /** Ecart entre deux cartes, en unites monde. */
+    static pasCarrousel() {
+        return CardController.CARD_W * 1.18;
+    }
+
+    /**
+     * Ecart en portrait quand les trois cartes restent visibles. 1.58 est le
+     * minimum : en dessous, deux cartes se touchent au survol (agrandissement
+     * de 6 %). Serrer au maximum, c'est agrandir les cartes d'autant.
+     */
+    static PAS_PORTRAIT = 1.58;
+
+    /**
+     * Les emplacements sont calcules a leur position finale par SceneManager :
+     * aucun facteur de compression a appliquer ici, et les cartes gardent leur
+     * taille pleine sur tous les ecrans.
+     */
     static layoutFor(aspect) {
-        const portrait = aspect < 0.85;
-        return { spread: portrait ? 0.68 : 1.0, scale: portrait ? 0.92 : 1.0 };
+        return { spread: 1.0, scale: 1.0 };
     }
 
     constructor(scene, textures) {
@@ -73,6 +111,41 @@ export class CardController {
             roughness: 0.2,
             metalness: 0.5 
         });
+    }
+
+    /**
+     * Centre la rangee sur la carte demandee. C'est la rangee entiere qui
+     * coulisse : les cartes ne bougent pas les unes par rapport aux autres.
+     */
+    centrerSur(index, immediat = false) {
+        if (!this.cards.length) return;
+        const n = this.cards.length;
+        this.indexActif = Math.max(0, Math.min(n - 1, index));
+        const pas = CardController.pasCarrousel();
+        const decalage = -(this.indexActif - (n - 1) / 2) * pas;
+
+        this.cards.forEach(mesh => {
+            const base = mesh.userData.baseSlot;
+            if (!base) return;
+            const x = base.x + decalage;
+            mesh.userData.slot.x = x;
+            if (mesh.userData.isSelected) return;
+            if (immediat) { mesh.position.x = x; return; }
+            new TWEEN.Tween(mesh.position).to({ x }, 380)
+                .easing(TWEEN.Easing.Cubic.Out).start();
+        });
+        if (this.onCarteActive) this.onCarteActive(this.indexActif, n);
+    }
+
+    /** Decale d'une carte vers la gauche ou la droite. */
+    deplacerCarrousel(sens) {
+        if (!this.cards.length) return;
+        this.centrerSur((this.indexActif ?? CardController.INDEX_DEPART) + sens);
+    }
+
+    /** La carte actuellement centree. */
+    carteActive() {
+        return this.cards[this.indexActif ?? CardController.INDEX_DEPART] || null;
     }
 
     createCards(cardData, slots) {
@@ -129,6 +202,13 @@ export class CardController {
                 .delay(i * 130)
                 .start();
         });
+    
+        // Carrousel : on demarre centre sur la carte du milieu.
+        if (CardController.estCarrousel(window.innerWidth / window.innerHeight)) {
+            this.centrerSur(Math.min(CardController.INDEX_DEPART, this.cards.length - 1), true);
+        } else {
+            this.indexActif = null;
+        }
     }
 
     generateCardMesh(data) {
@@ -751,7 +831,7 @@ export class CardController {
 
         // Lift the card off the mat and present it upright to the player.
         new TWEEN.Tween(mesh.position)
-            .to({ y: slot.y + (isSpecial ? 0.95 : 0.75), z: slot.z + (isSpecial ? 0.75 : 0.55) }, 520)
+            .to({ y: slot.y + (isSpecial ? 0.95 : 0.75), z: slot.z }, 520)
             .easing(easing)
             .start();
 
@@ -761,7 +841,7 @@ export class CardController {
             .start();
 
         // Satisfying scale pop when selected.
-        const selScale = base * (isSpecial ? 1.16 : 1.12);
+        const selScale = base * (isSpecial ? 1.08 : 1.06);
         mesh.userData._selectScale = selScale;
         new TWEEN.Tween(mesh.scale)
             .to({ x: selScale, y: selScale, z: selScale }, 520)
