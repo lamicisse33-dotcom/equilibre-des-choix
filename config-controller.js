@@ -35,6 +35,10 @@ export class ConfigController {
                 sfx: "Effets",
                 voice: "Voix",
                 stop_speech: "ARRÊTER LA LECTURE",
+                card_reading: "Lecture des cartes",
+                voice_plus: "plus",
+                voice_moins: "moins",
+                voice_par_tour: " par tour",
                 read_aloud: "LIRE À VOIX HAUTE",
                 swipe_hint: "← BALAYEZ POUR VOIR LES AUTRES →",
                 maj_dispo: "Nouvelle version disponible",
@@ -195,6 +199,10 @@ export class ConfigController {
                 sfx: "Effects",
                 voice: "Voice",
                 stop_speech: "STOP READING",
+                card_reading: "Card reading",
+                voice_plus: "plus",
+                voice_moins: "minus",
+                voice_par_tour: " per turn",
                 read_aloud: "READ ALOUD",
                 swipe_hint: "← SWIPE TO SEE THE OTHERS →",
                 maj_dispo: "A new version is available",
@@ -365,7 +373,9 @@ export class ConfigController {
             playerName: 'Gardien',
             lightMode: false,
             confirmClick: true,
-            screenShake: true
+            screenShake: true,
+            // Lecture vocale des cartes, active par defaut.
+            cardReading: true
         };
     }
 

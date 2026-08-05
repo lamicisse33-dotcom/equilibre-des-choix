@@ -43,6 +43,7 @@ export class UIController {
             configLang: document.getElementById('config-lang'),
             configTheme: document.getElementById('config-theme'),
             configLightMode: document.getElementById('config-light-mode'),
+            configCardReading: document.getElementById('config-card-reading'),
             historyBtn: document.getElementById('history-btn'),
             historyOverlay: document.getElementById('history-overlay'),
             historyList: document.getElementById('history-list'),
@@ -221,6 +222,14 @@ export class UIController {
         this.elements.configLightMode.addEventListener('click', handleLightMode);
         this.elements.configLightModeRef.addEventListener('click', handleLightMode);
 
+        // Lecture des cartes : commande explicite. La couper arrete aussi
+        // l'enonce en cours, sans attendre la carte suivante.
+        this.elements.configCardReading?.addEventListener('click', () => {
+            const actif = !(this.lastSyncConfig?.cardReading ?? true);
+            this.callbacks.onConfigChange('cardReading', actif);
+            if (!actif) this.arreterLecture();
+        });
+
         this.elements.configConfirmClickRef?.addEventListener('click', () => {
             this.callbacks.onConfigChange('confirmClick', !this.lastSyncConfig?.confirmClick);
         });
@@ -312,6 +321,13 @@ export class UIController {
         
         if (this.elements.configLightMode) {
             this.elements.configLightMode.textContent = config.lightMode ? 'ON' : 'OFF';
+        }
+        if (this.elements.configCardReading) {
+            const actif = config.cardReading !== false;
+            this.elements.configCardReading.textContent = actif ? 'ON' : 'OFF';
+            this.elements.configCardReading.style.borderColor =
+                actif ? 'var(--gold)' : 'rgba(197,160,89,0.3)';
+            this.lectureActivee = actif;
         }
         if (this.elements.configLightModeRef) {
             this.elements.configLightModeRef.textContent = config.lightMode ? 'ON' : 'OFF';
@@ -459,6 +475,8 @@ export class UIController {
         // Etat propre : le bouton ne reapparait qu'une fois la voix partie,
         // ou si le navigateur refuse la lecture automatique.
         this.montrerBouton('aucun');
+        // Reglage explicite du menu : il prime sur tout le reste.
+        if (this.lectureActivee === false) return;
         if (!('speechSynthesis' in window) || !data) return;
         this.deverrouillerVoix();
         if (this.lectureCoupee) return;
@@ -466,9 +484,10 @@ export class UIController {
         const volume = this.volumeVoix ?? 0.5;
         if (volume <= 0) return;
 
-        // Titre, puis description. Les effets chiffres ne sont pas dictes :
-        // ils sont deja lisibles d'un coup d'oeil et alourdiraient l'ecoute.
-        const texte = `${data.title}. ${data.desc || ''}`;
+        // Titre, description, puis les points pilier par pilier. Sans les
+        // chiffres, l'ecoute ne suffit pas a decider : ce sont eux qui portent
+        // le choix.
+        const texte = `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
         const u = new SpeechSynthesisUtterance(texte);
         u.lang = 'fr-FR';
         u.volume = volume;
@@ -545,6 +564,27 @@ export class UIController {
         window.speechSynthesis.onvoiceschanged = () => {
             window.speechSynthesis.getVoices();
         };
+    }
+
+    /**
+     * Traduit les effets d'une carte en une phrase dictable :
+     * "Spiritualite plus 16, Amour moins 4, Sante plus 8, Argent plus 1."
+     * Les signes sont enonces en toutes lettres, un "+" ne se prononce pas.
+     */
+    effetsEnMots(data) {
+        const effets = data.effectsPerTurn || data.effects;
+        if (!effets) return '';
+        const plus = this.callbacks.getTranslation('voice_plus') || 'plus';
+        const moins = this.callbacks.getTranslation('voice_moins') || 'moins';
+        const parTour = data.effectsPerTurn ? (this.callbacks.getTranslation('voice_par_tour') || '') : '';
+        const morceaux = [];
+        for (const p in effets) {
+            const v = effets[p];
+            if (!v) continue;
+            const nom = this.callbacks.getTranslation(`pillar_${p}`) || p;
+            morceaux.push(`${nom} ${v > 0 ? plus : moins} ${Math.abs(v)}${parTour}`);
+        }
+        return morceaux.length ? morceaux.join(', ') + '.' : '';
     }
 
     arreterLecture() {
