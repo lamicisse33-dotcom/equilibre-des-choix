@@ -22,7 +22,9 @@ export class SceneManager {
     static PART_HAUTEUR = 0.78;        // part maximale de la hauteur d'une carte
     // Sur ecran bas, la rangee occupait 83 % de la hauteur : il ne restait
     // aucune bande pour le bandeau superieur, qui se posait sur les cartes.
-    static PART_HAUTEUR_COURT = 0.66;
+    // Ecran bas : la rangee occupait 76 % de la hauteur et debordait par le
+    // bas une fois la bande du bandeau reservee en haut.
+    static PART_HAUTEUR_COURT = 0.56;
     // Rapprochement a la selection, en fraction de la distance au point de vise.
     static APPROCHE = 0.96;
     static APPROCHE_NARRATIVE = 0.94;
@@ -33,7 +35,7 @@ export class SceneManager {
     // Toute la scene -- balance, table, rangee -- est remontee pour degager le
     // bas de l'ecran. La fenetre de detail y retrouve sa place sans masquer
     // les cartes.
-    static BAS_CIBLE = 0.48;
+    static BAS_CIBLE = 0.58;
     // Abaisse pour laisser la rangee remonter jusqu'au bandeau superieur.
     static HAUT_MINI = 0.05;
     static HAUT_MINI_COURT = 0.22;     // laisse place au bandeau en paysage
@@ -573,14 +575,21 @@ export class SceneManager {
         // sous-estimait donc largement son emprise reelle. On mesure la
         // projection et on elargit le champ jusqu'a ce qu'elle rentre.
         const part = ecranBas ? SceneManager.PART_HAUTEUR_COURT : SceneManager.PART_HAUTEUR;
-        for (let i = 0; i < 5; i++) {
+        for (let i = 0; i < 6; i++) {
             const emprise = this.empriseRangee(fov, dist);
             if (emprise === null || emprise <= part) break;
             const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / part);
             const nouveau = Math.min(SceneManager.MAX_FOV,
                                      THREE.MathUtils.radToDeg(Math.atan(t) * 2));
-            if (nouveau <= fov + 0.01) break;
-            fov = nouveau;
+            if (nouveau > fov + 0.01) {
+                fov = nouveau;
+            } else {
+                // Champ deja au maximum : seul un recul peut faire rentrer la
+                // rangee. Sans ce recours, elle debordait par le bas en paysage.
+                const recul = dist * (emprise / part);
+                if (recul <= dist + 0.01) break;
+                dist = recul;
+            }
         }
 
         // --- Ajustement mesure, et non plus estime ---
@@ -613,13 +622,31 @@ export class SceneManager {
                 dist = Math.max(SceneManager.AVANCEE + 1.5, nouveau);
             }
 
-            // Le resserrement ne doit pas faire deborder la rangee par le haut
-            // ou par le bas : on repasse la garde de hauteur.
+        }
+
+        // --- Deux passes finales, qui ne peuvent qu'elargir ---
+        // La largeur veut rapprocher la camera, la hauteur veut la reculer :
+        // les deux se combattaient dans la meme boucle et s'arretaient au
+        // hasard. La hauteur passe en dernier et l'emporte.
+        for (let i = 0; i < 6; i++) {
             const emprise = this.empriseRangee(fov, dist);
-            if (emprise !== null && emprise > partHaut) {
-                const t2 = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / partHaut);
-                fov = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(t2) * 2));
-            }
+            if (emprise === null || emprise <= partHaut) break;
+            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / partHaut);
+            const f2 = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(t) * 2));
+            if (f2 > fov + 0.01) { fov = f2; continue; }
+            const recul = dist * (emprise / partHaut);
+            if (recul <= dist + 0.01) break;
+            dist = recul;
+        }
+        for (let i = 0; i < 6; i++) {
+            const debord = this.debordementLateral(fov, dist, aspect);
+            if (debord === null || debord <= SceneManager.BORD_MAX) break;
+            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (debord / SceneManager.BORD_MAX);
+            const f2 = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(t) * 2));
+            if (f2 > fov + 0.01) { fov = f2; continue; }
+            const recul = dist * (debord / SceneManager.BORD_MAX);
+            if (recul <= dist + 0.01) break;
+            dist = recul;
         }
 
         this.camera.fov = fov;
@@ -719,7 +746,10 @@ export class SceneManager {
 
     /** Part de la hauteur d'ecran reellement occupee par une carte. */
     empriseRangee(fov, dist) {
-        const b = this.bornesRangee(fov, dist, 0);
+        // Mesuree a la position reelle, descente comprise : evaluee a zero,
+        // elle sous-estimait l'emprise et la garde de hauteur ne se declenchait
+        // jamais en paysage.
+        const b = this.bornesRangee(fov, dist, this.calculerDescente(fov, dist));
         return b === null ? null : (b.bas - b.haut);
     }
 
