@@ -68,8 +68,15 @@ export class CardController {
     // de large sur iPhone, contre 119 avec les trois visibles.
     static CARROUSEL = false;
 
-    static estCarrousel(aspect) {
-        return CardController.CARROUSEL && aspect < 0.85;
+    /**
+     * Le defilement s'active tout seul quand la rangee ne tient plus : en
+     * portrait, une quatrieme carte -- offerte par un modificateur -- deborde
+     * de l'ecran des deux cotes. Plutot que de tout rapetisser, on fait
+     * defiler.
+     */
+    static estCarrousel(aspect, nbCartes = 3) {
+        if (CardController.CARROUSEL) return aspect < 0.85;
+        return aspect < 0.85 && nbCartes > 3;
     }
 
     /** Ecart entre deux cartes, en unites monde. */
@@ -204,7 +211,7 @@ export class CardController {
         });
     
         // Carrousel : on demarre centre sur la carte du milieu.
-        if (CardController.estCarrousel(window.innerWidth / window.innerHeight)) {
+        if (CardController.estCarrousel(window.innerWidth / window.innerHeight, this.cards.length)) {
             this.centrerSur(Math.min(CardController.INDEX_DEPART, this.cards.length - 1), true);
         } else {
             this.indexActif = null;

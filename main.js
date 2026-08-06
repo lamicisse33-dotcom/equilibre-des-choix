@@ -550,7 +550,10 @@ class App {
         const cc = this.scene.cardController;
         if (cc) {
             cc.onCarteActive = (i, n) => this.ui.majReperesCarrousel(i, n);
-            this.ui.majReperesCarrousel(cc.indexActif, cards.length);
+            // Les points et le rappel du geste n'apparaissent que si la rangee
+            // defile vraiment -- soit une quatrieme carte en portrait.
+            this.ui.majReperesCarrousel(cc.indexActif, cc.indexActif === null
+                || cc.indexActif === undefined ? 0 : cards.length);
         }
 
         // Update UI with refresh availability if needed

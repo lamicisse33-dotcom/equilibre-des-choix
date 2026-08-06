@@ -68,7 +68,7 @@ export class SceneManager {
         // amene chacune au centre.
         const ref0 = table.getCardSlot(1);
         const lift0 = CardController.LIFT_Y;
-        if (CardController.estCarrousel(aspect)) {
+        if (CardController.estCarrousel(aspect, n)) {
             const pas = CardController.pasCarrousel();
             return Array.from({ length: n }, (_, i) =>
                 new THREE.Vector3((i - (n - 1) / 2) * pas, ref0.y + lift0, ref0.z));
@@ -104,7 +104,7 @@ export class SceneManager {
     static halfWidthNeeded(aspect, n = 3) {
         // En carrousel, seule la carte centrale doit tenir dans le cadre : les
         // voisines depassent expres, ce qui montre qu'il y a autre chose a voir.
-        if (CardController.estCarrousel(aspect)) {
+        if (CardController.estCarrousel(aspect, n)) {
             return CardController.CARD_W / 2 + 0.30;
         }
         if (aspect < 0.85) {
@@ -700,7 +700,7 @@ export class SceneManager {
         const demiSel = demi * CardController.SELECT_SCALE;
         // En carrousel on ne mesure que la carte centree : les voisines
         // debordent volontairement.
-        const carrousel = CardController.estCarrousel(aspect);
+        const carrousel = CardController.estCarrousel(aspect, this._nbCartes || 3);
         const base = carrousel ? 0
                    : (aspect < 0.85 ? CardController.PAS_PORTRAIT
                                     : SceneManager.SLOT_X * l.spread);
