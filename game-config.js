@@ -177,6 +177,21 @@ export const GAME_OVER_THRESHOLD_HIGH = 100;
 
 export const HARMONY_VARIANCE_THRESHOLD = 50;
 
+// --- HARMONIE STRICTE ---
+// L'ancienne definition ne mesurait que l'ecart entre les piliers : un joueur
+// a 95 partout etait declare "en harmonie" a un tour de sa mort. L'harmonie
+// exige desormais les deux conditions de la philosophie du jeu : ni ecart,
+// ni exces, ni manque.
+// "On ne vous jugera pas sur votre plus haut pilier, mais sur le plus bas."
+// L'harmonie se mesure donc d'abord sur le pilier le plus faible. Une bande
+// etroite autour de 50 s'est revelee intenable : une seule carte deplace un
+// pilier de 20 a 45 points. Ces valeurs donnent une victoire atteignable
+// environ une partie sur neuf pour qui la vise -- mesure sur 8000 parties.
+export const HARMONIE_PLUS_BAS = 35;    // aucun pilier en dessous
+export const HARMONIE_PLAFOND = 88;     // aucun pilier au-dessus
+export const HARMONIE_ECART_MAX = 40;   // du plus haut au plus bas
+export const HARMONIE_TOURS_VICTOIRE = 3;
+
 export const SCENARIOS = [
     // spirituality
     { 
@@ -677,6 +692,11 @@ export const WORLD_EVENTS = [
 ];
 
 export const TROPHIES = [
+    // Premiere victoire : le jeu n'avait aucune fin heureuse a recompenser.
+    { id: 'premiere_victoire', name: "L'Équilibre Atteint", icon: '✦',
+      desc: "Tenir l'harmonie quatre tours d'affilée.",
+      requirement: (e) => !!e.isVictory },
+
     {
         id: "centenarian",
         title: "Le Centenaire",

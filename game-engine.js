@@ -12,6 +12,10 @@ import {
     GAME_OVER_THRESHOLD_LOW, 
     GAME_OVER_THRESHOLD_HIGH,
     HARMONY_VARIANCE_THRESHOLD,
+    HARMONIE_PLUS_BAS,
+    HARMONIE_PLAFOND,
+    HARMONIE_ECART_MAX,
+    HARMONIE_TOURS_VICTOIRE,
     PILLARS,
     RARITY_DEFINITIONS,
     PILLAR_DEFINITIONS,
@@ -24,6 +28,22 @@ export class GameEngine {
     // jamais -- voyait tous les malus devenir des bonus.
     static TOUR_PLAFOND = 60;
 
+    // Montee en puissance : l'amplitude des cartes part a 60 % et atteint son
+    // plein au tour 8, laissant le temps d'apprendre.
+    static TOURS_DOUX = 8;
+    static DOUCEUR_DEPART = 0.6;
+
+    // Filet des premieres parties : le premier pilier qui touche une borne ne
+    // tue pas, il est ramene au centre avec un message qui nomme l'erreur.
+    static PARTIES_PROTEGEES = 3;
+
+    /** Le filet ne joue qu'une fois par partie, sur les toutes premieres. */
+    filetDisponible() {
+        if (this.filetUtilise || this.isMeditationMode) return false;
+        const jouees = this.globalStats?.gamesPlayed ?? 0;
+        return jouees < GameEngine.PARTIES_PROTEGEES;
+    }
+
     constructor(stats = {}, heritage = { upgrades: {} }) {
         this.pillars = {};
         PILLARS.forEach(p => this.pillars[p] = INITIAL_PILLAR_VALUE);
@@ -33,6 +53,9 @@ export class GameEngine {
         this.isGameOver = false;
         this.reachedHarmony = false;
         this.consecutiveHarmony = 0;
+        this.isVictory = false;
+        this.filetUtilise = false;
+        this.dernierFilet = null;
         this.currentSeed = 0;
         this.history = []; // History of choices
         this.activeEvents = []; // Active persistent effects
@@ -93,6 +116,9 @@ export class GameEngine {
         this.isGameOver = false;
         this.reachedHarmony = false;
         this.consecutiveHarmony = 0;
+        this.isVictory = false;
+        this.filetUtilise = false;
+        this.dernierFilet = null;
         this.history = [];
         this.activeEvents = [];
         this.unlockedTrophies = [];
@@ -260,7 +286,13 @@ export class GameEngine {
             // les effets etaient multiplies par sept. Bornee a 2.5, atteinte au
             // tour 60 -- au-dela, la difficulte vient des seuils, pas de
             // l'inflation des chiffres.
-            const scale = 1 + Math.min(this.turn, GameEngine.TOUR_PLAFOND) / 40;
+            // Les premiers tours sont adoucis. A pleine amplitude des le
+            // depart, un debutant mourait en trois tours huit fois sur dix --
+            // trop court pour comprendre ce qui l'avait tue.
+            const scale = this.turn < GameEngine.TOURS_DOUX
+                ? GameEngine.DOUCEUR_DEPART
+                  + (1 - GameEngine.DOUCEUR_DEPART) * (this.turn / GameEngine.TOURS_DOUX)
+                : 1 + Math.min(this.turn - GameEngine.TOURS_DOUX, GameEngine.TOUR_PLAFOND) / 40;
             const card = this.createCardFromScenario(scenario, scale);
             cards.push(card);
         }
@@ -506,6 +538,14 @@ export class GameEngine {
                     this.pillars[pillar] = 10;
                     this.rescueUsed = true;
                     // Log rescue event? We'll see.
+                } else if (this.filetDisponible()) {
+                    // Filet des premieres parties : la premiere erreur ne tue
+                    // pas, elle enseigne. Le pilier revient au centre et le jeu
+                    // nomme la faute.
+                    const parExces = this.pillars[pillar] >= GAME_OVER_THRESHOLD_HIGH;
+                    this.pillars[pillar] = 50;
+                    this.filetUtilise = true;
+                    this.dernierFilet = { pillar, parExces };
                 } else {
                     this.isGameOver = true;
                 }
@@ -519,7 +559,13 @@ export class GameEngine {
         const values = Object.values(this.pillars);
         const mean = values.reduce((a, b) => a + b) / values.length;
         const variance = values.reduce((a, b) => a + Math.pow(b - mean, 2), 0) / values.length;
-        const isBalanced = variance < HARMONY_VARIANCE_THRESHOLD;
+        // Harmonie : les piliers doivent etre proches ET dans la zone vivable.
+        // L'ancienne mesure ne regardait que l'ecart : 95/95/95/95 etait
+        // declare harmonieux a un tour de la mort.
+        const plusBas = Math.min(...values), plusHaut = Math.max(...values);
+        const isBalanced = plusBas >= HARMONIE_PLUS_BAS
+                        && plusHaut <= HARMONIE_PLAFOND
+                        && (plusHaut - plusBas) <= HARMONIE_ECART_MAX;
         const harmonyMultiplier = isBalanced ? 2.5 : 1.0;
         const balanceFactor = 100 - Math.sqrt(variance);
         const turnFactor = 1 + (this.turn / 10);
@@ -540,6 +586,17 @@ export class GameEngine {
         
         if (this.reachedHarmony) {
             this.consecutiveHarmony++;
+            // Victoire : l'harmonie tenue assez longtemps pour n'etre plus un
+            // hasard. Le mode Meditation, sans fin par nature, en est exclu.
+            // La victoire ne se cueille pas pendant la phase d'apprentissage :
+            // les premiers tours sont adoucis pour laisser comprendre, pas pour
+            // offrir le titre. Il faut avoir atteint la pleine puissance.
+            if (this.consecutiveHarmony >= HARMONIE_TOURS_VICTOIRE
+                && this.turn >= GameEngine.TOURS_DOUX
+                && !this.isMeditationMode && !this.isVictory) {
+                this.isVictory = true;
+                this.isGameOver = true;
+            }
         } else {
             this.consecutiveHarmony = 0;
         }

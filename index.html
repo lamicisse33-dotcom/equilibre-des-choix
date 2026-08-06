@@ -187,7 +187,7 @@
             background: rgba(10, 10, 10, 0.85);
             backdrop-filter: blur(25px);
             border: 1px solid var(--gold);
-            padding: 30px;
+            padding: 18px 24px 20px;
             border-radius: 4px;
             width: 360px;
             max-width: 90vw;
@@ -561,6 +561,7 @@
                 bottom: 80px;
                 padding: 12px 16px 14px;
             }
+            #card-info #card-title { line-height: 1.15; }
             /* Ecritures agrandies : la fenetre a la place, la scene ayant ete
                remontee. La lisibilite prime sur la compacite. */
             #card-info #card-rarity { margin-bottom: 4px; font-size: 0.7rem; letter-spacing: 3px; }
@@ -847,10 +848,177 @@
             #carousel-hint { display: block; bottom: 138px; }
         }
 
+        /* --- VICTOIRE --- */
+        #fireworks { position: fixed; inset: 0; z-index: 245; pointer-events: none; }
+        #game-over.victoire {
+            background: radial-gradient(ellipse at 50% 32%,
+                        rgba(60, 45, 12, 0.97) 0%, rgba(0, 0, 0, 0.985) 62%);
+        }
+        #victory-rank {
+            margin-top: 16px;
+            font-family: var(--font-serif);
+            font-size: 0.76rem;
+            letter-spacing: 3px;
+            color: var(--gold-bright);
+            border: 1px solid var(--gold);
+            padding: 10px 18px;
+            background: rgba(197, 160, 89, 0.12);
+            text-transform: uppercase;
+        }
+        /* --- SERIE D HARMONIE --- */
+        #harmony-streak {
+            position: absolute;
+            top: 118px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; align-items: center; gap: 8px;
+            padding: 6px 14px;
+            border: 1px solid rgba(197, 160, 89, 0.45);
+            background: rgba(20, 16, 8, 0.7);
+            pointer-events: none; z-index: 24;
+        }
+        #harmony-streak .mot {
+            font-family: var(--font-serif); font-size: 0.6rem;
+            letter-spacing: 2px; color: var(--gold); margin-right: 4px;
+        }
+        #harmony-streak .perle {
+            width: 8px; height: 8px; border-radius: 50%;
+            border: 1px solid var(--gold); background: transparent;
+            transition: all 0.3s;
+        }
+        #harmony-streak .perle.pleine {
+            background: var(--gold-bright);
+            box-shadow: 0 0 8px var(--gold-bright);
+        }
+        #harmony-streak .compte {
+            font-family: var(--font-serif);
+            font-size: 0.6rem;
+            color: var(--gold);
+            opacity: 0.7;
+            margin-left: 4px;
+        }
+        /* La serie en cours se distingue de l'objectif au repos. */
+        #harmony-streak.active {
+            border-color: var(--gold-bright);
+            box-shadow: 0 0 14px rgba(197, 160, 89, 0.35);
+        }
+
+        /* Zone sure marquee sur chaque jauge : le joueur voit d'un coup d'oeil
+           ou ses piliers doivent se tenir pour gagner. */
+        .pillar-bar {
+            position: relative;
+        }
+        .pillar-bar::before {
+            content: '';
+            position: absolute;
+            left: 0; right: 0;
+            bottom: 40%;
+            height: 45%;
+            background: rgba(197, 160, 89, 0.10);
+            border-top: 1px solid rgba(197, 160, 89, 0.45);
+            border-bottom: 1px solid rgba(197, 160, 89, 0.45);
+            pointer-events: none;
+            z-index: 1;
+        }
+        @media (max-width: 768px) {
+            /* En portrait les jauges sont horizontales : la zone aussi. */
+            .pillar-bar::before {
+                left: 40%; right: 15%;
+                top: 0; bottom: 0;
+                height: auto;
+                border-top: none; border-bottom: none;
+                border-left: 1px solid rgba(197, 160, 89, 0.45);
+                border-right: 1px solid rgba(197, 160, 89, 0.45);
+            }
+        }
+        @media (orientation: landscape) and (max-height: 620px) {
+            #harmony-streak { top: 34px; padding: 4px 10px; }
+        }
+
+        /* --- AVERTISSEMENT SUR UNE CARTE --- */
+        #card-warning.avert {
+            margin-top: 8px;
+            font-family: var(--font-serif);
+            font-size: 0.7rem;
+            letter-spacing: 1px;
+            padding: 6px 12px;
+            border: 1px solid #f39c12;
+            color: #ffd18a;
+            background: rgba(60, 42, 8, 0.5);
+        }
+        #card-warning.avert.mortel {
+            border-color: #e74c3c;
+            color: #ff9d9d;
+            background: rgba(60, 10, 10, 0.55);
+        }
+
+        /* --- FILET DES PREMIERES PARTIES --- */
+        #net-message {
+            position: absolute;
+            top: 30%;
+            left: 50%;
+            transform: translateX(-50%);
+            max-width: 84vw;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            text-align: center;
+            padding: 18px 24px;
+            border: 1px solid var(--gold);
+            background: rgba(10, 8, 4, 0.95);
+            box-shadow: 0 18px 50px rgba(0,0,0,0.8);
+            pointer-events: none;
+            z-index: 210;
+        }
+        #net-message .titre {
+            font-family: var(--font-serif);
+            font-size: 0.72rem;
+            letter-spacing: 4px;
+            color: var(--gold-bright);
+        }
+        #net-message .texte {
+            font-size: 0.86rem;
+            line-height: 1.5;
+            color: #fff;
+        }
+
+        /* --- CONSEIL DE CARTE --- */
+        #advice-box {
+            position: absolute;
+            top: 158px; left: 50%;
+            transform: translateX(-50%);
+            display: flex; align-items: center; gap: 10px;
+            padding: 7px 16px;
+            border: 1px solid rgba(16, 185, 129, 0.6);
+            background: rgba(6, 32, 24, 0.82);
+            max-width: 88vw;
+            pointer-events: none; z-index: 24;
+        }
+        #advice-box .mot {
+            font-family: var(--font-serif);
+            font-size: 0.58rem; letter-spacing: 2px;
+            color: #10b981; white-space: nowrap;
+        }
+        #advice-box .titre {
+            font-family: var(--font-serif);
+            font-size: 0.72rem; letter-spacing: 1px;
+            color: #fff; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+        }
+        @media (orientation: landscape) and (max-height: 620px) {
+            #advice-box { top: 62px; padding: 4px 12px; }
+        }
+
         .hidden {
             opacity: 0 !important;
             pointer-events: none !important;
             visibility: hidden;
+        }
+        /* visibility: hidden efface l'element mais lui garde sa place. Dans la
+           fenetre de detail, le bandeau de synergie et le bouton de lecture
+           masques laissaient donc deux bandes vides. Ici, on les replie. */
+        #card-info #synergy-status.hidden,
+        #card-info #speech-stop-btn.hidden,
+        #card-info #refresh-hand-btn.hidden {
+            display: none !important;
         }
 
         /* HERITAGE TREE STYLES */
@@ -1267,8 +1435,9 @@
             <div style="text-align: left; line-height: 1.6; font-size: 0.85rem; margin-bottom: 25px;">
                 <p data-i18n="rules_1">Maintenez l'équilibre entre les 4 piliers de vie.</p>
                 <p data-i18n="rules_2">Chaque pilier doit rester entre 1 et 99 pour survivre.</p>
-                <p data-i18n="rules_3">L'harmonie est atteinte lorsque les piliers sont proches les uns des autres.</p>
-                <p data-i18n="rules_4">Choisissez vos cartes avec sagesse. Le destin est entre vos mains.</p>
+                <p style="color: var(--gold-bright); font-weight: 600;" data-i18n="rules_victoire">POUR GAGNER : maintenez vos 4 piliers entre 40 et 85 pendant 4 tours de suite.</p>
+                <p data-i18n="rules_3">Le compteur HARMONIE en haut de l'écran indique votre progression, et la zone dorée sur chaque jauge montre où le pilier doit se tenir.</p>
+                <p data-i18n="rules_4">Chaque carte donne et chaque carte prend. Choisissez celle dont le sacrifice vous coûte le moins.</p>
             </div>
             <button id="close-rules-btn" class="menu-btn secondary" style="width: 100%;" data-i18n="close">Fermer</button>
         </div>
@@ -1539,6 +1708,11 @@
         </div>
 
         <div id="peril-alert" class="hidden"></div>
+        <div id="harmony-streak" class="hidden"></div>
+        <!-- Carte conseillee, pendant les premieres parties -->
+        <div id="advice-box" class="hidden"></div>
+        <!-- Message du filet des premieres parties -->
+        <div id="net-message" class="hidden"></div>
 
         <div id="autosave-indicator" data-i18n="autosave" style="position: absolute; top: 130px; left: 130px; font-size: 0.5rem; color: var(--gold); letter-spacing: 2px; opacity: 0; transition: opacity 0.5s; pointer-events: none; font-family: var(--font-serif);">
             SYNCHRONISATION...
@@ -1592,6 +1766,10 @@
                         <label data-i18n="card_reading">Lecture des cartes</label>
                         <button id="config-card-reading">ON</button>
                     </div>
+                    <div class="config-row">
+                        <label data-i18n="conseil_reglage">Carte conseillée</label>
+                        <button id="config-conseil">AUTO</button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -1607,6 +1785,8 @@
             <div id="card-title">Nom de la carte</div>
             <div id="card-desc">Description de l'action.</div>
             <div id="card-effects"></div>
+            <!-- Avertissement avant le choix -->
+            <div id="card-warning" class="hidden avert"></div>
             <!-- Lecture vocale : demarre a l'ouverture du panneau, ce bouton
                  l'interrompt. Il n'apparait que pendant la lecture. -->
             <!-- Bouton a deux visages : arret pendant la lecture, ou commande
@@ -1622,6 +1802,8 @@
     <!-- Initiation : n'apparait qu'a la toute premiere partie -->
     <!-- Bandeau de mise a jour : apparait quand une nouvelle version est prete -->
     <!-- Reperes du carrousel : position dans la main, et rappel du geste -->
+    <canvas id="fireworks" class="hidden"></canvas>
+
     <div id="carousel-hint" data-i18n="swipe_hint">← BALAYEZ POUR VOIR LES AUTRES →</div>
     <div id="carousel-dots"></div>
 
@@ -1667,6 +1849,7 @@
             VICTOIRE
         </div>
         
+        <div id="victory-rank" class="hidden"></div>
         <div id="game-over-summary" style="margin-top: 18px; max-height: 150px; overflow-y: auto; font-size: 0.78rem; color: rgba(255,255,255,0.62); border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
             <!-- Summary of the life lived will be injected here -->
         </div>

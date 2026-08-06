@@ -168,6 +168,12 @@ class App {
                 // La ligne des parametres et le bouton du menu passent par le
                 // meme chemin : impossible qu'ils se contredisent.
                 if (key === 'cardReading') this.appliquerReglageVoix(val);
+                if (key === 'conseil') {
+                    this.config.currentConfig.conseil = val;
+                    this.persistence.saveSettings?.(this.config.currentConfig);
+                    this.ui.lastSyncConfig = { ...(this.ui.lastSyncConfig || {}), conseil: val };
+                    this.ui.syncSettings?.(this.config.currentConfig);
+                }
             },
             onPauseStateChange: (isPaused) => {
                 this.isPaused = isPaused;
@@ -404,6 +410,34 @@ class App {
         }
     }
 
+    /** Le conseil accompagne les premieres parties, puis se retire. */
+    conseilActif() {
+        if (this.config.currentConfig.conseil === false) return false;
+        if (this.config.currentConfig.conseil === true) return true;
+        return (this.persistence.getStats().gamesPlayed || 0) < 6;
+    }
+
+    /**
+     * Designe la carte qui laisse les quatre piliers au plus pres de la zone
+     * d'harmonie. Meme raisonnement qu'un joueur experimente, rendu visible.
+     */
+    conseillerCarte(cartes) {
+        if (!cartes || !cartes.length) return null;
+        const P = ['spirituality', 'love', 'health', 'money'];
+        let best = null, meilleur = -Infinity;
+        for (const c of cartes) {
+            let note = 0;
+            for (const p of P) {
+                const apres = (this.engine.pillars[p] || 0) + ((c.effects && c.effects[p]) || 0);
+                if (apres <= 0 || apres >= 100) note -= 1000;
+                else if (apres >= 35 && apres <= 88) note += 10;
+                else note -= Math.min(Math.abs(apres - 35), Math.abs(apres - 88)) / 3;
+            }
+            if (note > meilleur) { meilleur = note; best = c; }
+        }
+        return best;
+    }
+
     /** Ecrit l'etat courant. Appelable a tout moment, sans effet de bord. */
     sauvegarder() {
         try {
@@ -495,6 +529,11 @@ class App {
         this.scene.createCardMeshes(cards);
         // Reperes du carrousel : autant de points que de cartes, le point
         // allonge marquant celle qui est centree.
+        // Conseil : la carte qui preserve le mieux l'equilibre. Elargir la
+        // cible de victoire n'aidait pas le debutant -- il ne la visait jamais.
+        // Lui montrer quelle carte y mene le transforme en joueur qui vise.
+        this.ui.montrerConseil(this.conseillerCarte(cards), this.conseilActif());
+
         const cc = this.scene.cardController;
         if (cc) {
             cc.onCarteActive = (i, n) => this.ui.majReperesCarrousel(i, n);
@@ -793,6 +832,13 @@ class App {
         this.ui.showCardInfo(null);
         this.ui.update(this.engine);
         this.scene.updatePillars(this.engine.pillars, this.engine.reachedHarmony ? 0 : 60, this.engine.reachedHarmony, data, this.engine.triggeredAbilities);
+        // Le filet vient de jouer : on l'annonce, sinon le joueur ne comprend
+        // ni pourquoi il survit, ni ce qu'il a fait de travers.
+        if (this.engine.dernierFilet) {
+            this.ui.montrerFilet(this.engine.dernierFilet);
+            this.audio.playSFX('ui-confirm-sfx', 0.25);
+            this.engine.dernierFilet = null;
+        }
     }
 }
 

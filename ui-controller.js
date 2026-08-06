@@ -25,6 +25,12 @@ export class UIController {
             carouselDots: document.getElementById('carousel-dots'),
             carouselHint: document.getElementById('carousel-hint'),
             gameOverCause: document.getElementById('game-over-cause'),
+            victoryTitle: document.getElementById('victory-rank'),
+            fireworks: document.getElementById('fireworks'),
+            harmonyStreak: document.getElementById('harmony-streak'),
+            cardWarning: document.getElementById('card-warning'),
+            adviceBox: document.getElementById('advice-box'),
+            netMessage: document.getElementById('net-message'),
             harmonyBadge: document.getElementById('harmony-badge'),
             settingsBtn: document.getElementById('settings-btn'),
             settingsMenu: document.getElementById('settings-menu'),
@@ -43,6 +49,7 @@ export class UIController {
             configTheme: document.getElementById('config-theme'),
             configLightMode: document.getElementById('config-light-mode'),
             configCardReading: document.getElementById('config-card-reading'),
+            configConseil: document.getElementById('config-conseil'),
             historyBtn: document.getElementById('history-btn'),
             historyOverlay: document.getElementById('history-overlay'),
             historyList: document.getElementById('history-list'),
@@ -188,7 +195,7 @@ export class UIController {
 
         this.elements.tutorialNext?.addEventListener('click', () => {
             this.etapeTuto++;
-            if (this.etapeTuto >= 3) this.fermerInitiation();
+            if (this.etapeTuto >= 4) this.fermerInitiation();
             else this.afficherEtapeTuto();
         });
         this.elements.tutorialSkip?.addEventListener('click', () => this.fermerInitiation());
@@ -223,6 +230,13 @@ export class UIController {
 
         // Lecture des cartes : commande explicite. La couper arrete aussi
         // l'enonce en cours, sans attendre la carte suivante.
+        // Conseil : automatique, toujours, ou jamais.
+        this.elements.configConseil?.addEventListener('click', () => {
+            const suite = { null: true, true: false, false: null };
+            const actuel = this.lastSyncConfig?.conseil ?? null;
+            this.callbacks.onConfigChange('conseil', suite[String(actuel)]);
+        });
+
         this.elements.configCardReading?.addEventListener('click', () => {
             const actif = !(this.lastSyncConfig?.cardReading ?? true);
             this.callbacks.onConfigChange('cardReading', actif);
@@ -320,6 +334,11 @@ export class UIController {
         
         if (this.elements.configLightMode) {
             this.elements.configLightMode.textContent = config.lightMode ? 'ON' : 'OFF';
+        }
+        if (this.elements.configConseil) {
+            const c = config.conseil;
+            this.elements.configConseil.textContent =
+                c === true ? 'ON' : (c === false ? 'OFF' : 'AUTO');
         }
         if (this.elements.configCardReading) {
             const actif = config.cardReading !== false;
@@ -432,6 +451,10 @@ export class UIController {
 
         this.dernierPillars = gameState.pillars;
         this.majPeril(gameState.pillars);
+        // Serie d'harmonie : sans ce rappel, le joueur gagnerait sans avoir vu
+        // qu'il etait en train de gagner.
+        this.majSerieHarmonie(gameState.consecutiveHarmony || 0,
+                              gameState.isMeditationMode ? 0 : 4);
 
         if (this.elements.dangerVignette) {
             if (isAnyPillarInDanger) {
@@ -634,6 +657,63 @@ export class UIController {
         zone.innerHTML = html;
     }
 
+    /**
+     * Signale d'avance les consequences dangereuses d'une carte : sortie de la
+     * zone sure, ou pire, franchissement d'une borne mortelle.
+     */
+    majAvertissement(data, pillars) {
+        const z = this.elements.cardWarning;
+        if (!z) return;
+        const effets = data && (data.effects || data.effectsPerTurn);
+        if (!effets || !pillars) { z.classList.add('hidden'); return; }
+
+        const mortels = [], sorties = [];
+        for (const p in effets) {
+            const apres = (pillars[p] || 0) + (effets[p] || 0);
+            const nom = this.callbacks.getTranslation(`pillar_${p}`) || p;
+            if (apres <= 0 || apres >= 100) mortels.push(nom);
+            else if (apres < 40 || apres > 85) sorties.push(nom);
+        }
+        if (mortels.length) {
+            z.textContent = `⚠ ${mortels.join(', ')} — ${this.callbacks.getTranslation('avert_mortel')}`;
+            z.className = 'avert mortel';
+        } else if (sorties.length) {
+            z.textContent = `${sorties.join(', ')} — ${this.callbacks.getTranslation('avert_zone')}`;
+            z.className = 'avert';
+        } else {
+            z.classList.add('hidden');
+            return;
+        }
+        z.classList.remove('hidden');
+    }
+
+    /** Message du filet : la premiere erreur enseigne au lieu de tuer. */
+    montrerFilet(info) {
+        const z = this.elements.netMessage;
+        if (!z || !info) return;
+        const nom = this.callbacks.getTranslation(`pillar_${info.pillar}`) || info.pillar;
+        const cause = this.callbacks.getTranslation(info.parExces ? 'filet_exces' : 'filet_manque');
+        z.innerHTML = `<span class="titre">${this.callbacks.getTranslation('filet_titre')}</span>`
+                    + `<span class="texte">${nom} ${cause}</span>`;
+        z.classList.remove('hidden');
+        clearTimeout(this._filetTimer);
+        this._filetTimer = setTimeout(() => z.classList.add('hidden'), 5200);
+    }
+
+    /**
+     * Affiche la carte conseillee. Ce n'est pas une aide au sens faible : sans
+     * elle, un debutant ne vise jamais l'harmonie et ne gagne donc jamais,
+     * quel que soit l'assouplissement de la cible.
+     */
+    montrerConseil(carte, actif) {
+        const z = this.elements.adviceBox;
+        if (!z) return;
+        if (!actif || !carte) { z.classList.add('hidden'); return; }
+        z.innerHTML = `<span class="mot">${this.callbacks.getTranslation('conseil')}</span>`
+                    + `<span class="titre">${carte.title}</span>`;
+        z.classList.remove('hidden');
+    }
+
     montrerBouton(mode) {
         const b = this.elements.speechStopBtn;
         if (!b) return;
@@ -670,7 +750,7 @@ export class UIController {
 
     afficherEtapeTuto() {
         const n = this.etapeTuto + 1;
-        if (this.elements.tutorialStep) this.elements.tutorialStep.textContent = `ÉTAPE ${n} / 3`;
+        if (this.elements.tutorialStep) this.elements.tutorialStep.textContent = `ÉTAPE ${n} / 4`;
         if (this.elements.tutorialText) {
             this.elements.tutorialText.textContent = this.callbacks.getTranslation(`tuto_${n}`);
         }
@@ -815,6 +895,10 @@ export class UIController {
         // Lecture automatique. Relancee a chaque nouvelle carte presentee ;
         // une carte deja lue n'est pas repetee tant qu'on reste dessus.
         this.carteAffichee = data;
+        // Avertissement avant le choix : quelle carte ferait sortir un pilier
+        // de la zone sure, ou pire, le tuerait. Le joueur voyait le danger
+        // seulement apres l'avoir subi.
+        this.majAvertissement(data, currentPillars);
         if (this.derniereCarteLue !== data.id) {
             this.derniereCarteLue = data.id;
             this.lectureCoupee = false;   // une nouvelle carte relance la voix
@@ -880,23 +964,115 @@ export class UIController {
             summaryEl.innerHTML = html;
         }
 
+        // --- VICTOIRE ---
+        // Le jeu n'avait qu'une seule fin. Tenir l'harmonie assez longtemps en
+        // ouvre une seconde, et elle doit se distinguer au premier regard.
+        const victoire = !!gameState.isVictory;
+        const t = (k) => this.callbacks.getTranslation(k);
+
         if (this.elements.gameOverTitle) {
-            if (isNewRecord) {
-                this.elements.gameOverTitle.textContent = "Un Nouvel Héritage";
-                this.elements.gameOverTitle.style.color = "var(--gold-bright)";
-            } else {
-                this.elements.gameOverTitle.textContent = "Le Cycle s'achève";
-                this.elements.gameOverTitle.style.color = "var(--gold)";
-            }
+            this.elements.gameOverTitle.textContent = victoire ? t('victoire_titre')
+                : (isNewRecord ? "Un Nouvel Héritage" : "Le Cycle s'achève");
+            this.elements.gameOverTitle.style.color =
+                (victoire || isNewRecord) ? 'var(--gold-bright)' : 'var(--gold)';
         }
-
         if (this.elements.gameOverDesc) {
-            this.elements.gameOverDesc.textContent = isNewRecord ? 
-                "Votre sagesse a transcendé le temps." : 
-                "Un moment de calme avant le renouveau.";
+            this.elements.gameOverDesc.textContent = victoire ? t('victoire_desc')
+                : (isNewRecord ? "Votre sagesse a transcendé le temps."
+                               : "Un moment de calme avant le renouveau.");
         }
+        // La cause de la mort n'a pas lieu d'etre quand on a gagne.
+        if (victoire) this.elements.gameOverCause?.classList.add('hidden');
 
-        if (this.elements.gameOver) this.elements.gameOver.classList.remove('hidden');
+        const ecran = this.elements.gameOver;
+        if (ecran) {
+            ecran.classList.toggle('victoire', victoire);
+            ecran.classList.remove('hidden');
+        }
+        // Le titre gagne, annonce sous les scores.
+        if (this.elements.victoryTitle) {
+            this.elements.victoryTitle.classList.toggle('hidden', !victoire);
+            if (victoire) this.elements.victoryTitle.textContent = t('victoire_rang');
+        }
+        if (victoire) this.lancerFeuxArtifice();
+    }
+
+    /**
+     * Feux d'artifice de victoire. Canvas 2D independant de la scene 3D :
+     * il continue meme si le rendu est en pause, et ne coute rien le reste
+     * du temps puisqu'il n'existe pas.
+     */
+    lancerFeuxArtifice(duree = 9000) {
+        const c = this.elements.fireworks;
+        if (!c) return;
+        c.classList.remove('hidden');
+        c.width = window.innerWidth; c.height = window.innerHeight;
+        const ctx = c.getContext('2d');
+        const teintes = ['#f3e5ab', '#c5a059', '#ffd166', '#fff2cc', '#e8b64c'];
+        let particules = [], fin = Date.now() + duree, prochaine = 0;
+
+        const gerbe = () => {
+            const x = c.width * (0.15 + Math.random() * 0.7);
+            const y = c.height * (0.15 + Math.random() * 0.35);
+            const teinte = teintes[Math.floor(Math.random() * teintes.length)];
+            const n = 46 + Math.floor(Math.random() * 26);
+            for (let i = 0; i < n; i++) {
+                const a = (Math.PI * 2 * i) / n + Math.random() * 0.2;
+                const v = 2.2 + Math.random() * 3.6;
+                particules.push({ x, y, vx: Math.cos(a) * v, vy: Math.sin(a) * v,
+                                  vie: 1, teinte, taille: 1.4 + Math.random() * 1.8 });
+            }
+        };
+
+        const boucle = () => {
+            const maintenant = Date.now();
+            ctx.clearRect(0, 0, c.width, c.height);
+            if (maintenant < fin && maintenant > prochaine) {
+                gerbe(); prochaine = maintenant + 380 + Math.random() * 420;
+            }
+            for (const p of particules) {
+                p.x += p.vx; p.y += p.vy;
+                p.vy += 0.045;            // gravite
+                p.vx *= 0.985; p.vy *= 0.985;
+                p.vie -= 0.011;
+                if (p.vie <= 0) continue;
+                ctx.globalAlpha = Math.max(0, p.vie);
+                ctx.fillStyle = p.teinte;
+                ctx.beginPath();
+                ctx.arc(p.x, p.y, p.taille * p.vie, 0, Math.PI * 2);
+                ctx.fill();
+            }
+            ctx.globalAlpha = 1;
+            particules = particules.filter(p => p.vie > 0);
+            if (maintenant < fin || particules.length) {
+                this._feux = requestAnimationFrame(boucle);
+            } else {
+                c.classList.add('hidden');
+                ctx.clearRect(0, 0, c.width, c.height);
+            }
+        };
+        cancelAnimationFrame(this._feux);
+        boucle();
+    }
+
+    /** Points d'harmonie : le joueur doit voir qu'il est en train de gagner. */
+    majSerieHarmonie(serie, requis) {
+        const z = this.elements.harmonyStreak;
+        if (!z) return;
+        // Le compteur reste visible en permanence, meme a zero. Cache tant que
+        // la serie n'avait pas commence, il ne montrait jamais au joueur ce
+        // qu'il devait viser -- on ne peut pas gagner a un jeu dont on ignore
+        // le but.
+        if (!requis) { z.classList.add('hidden'); z.innerHTML = ''; return; }
+        z.classList.remove('hidden');
+        const mot = serie > 0 ? 'harmonie_serie' : 'objectif_gagner';
+        let html = `<span class="mot">${this.callbacks.getTranslation(mot)}</span>`;
+        for (let i = 0; i < requis; i++) {
+            html += `<span class="perle${i < serie ? ' pleine' : ''}"></span>`;
+        }
+        html += `<span class="compte">${serie} / ${requis}</span>`;
+        z.innerHTML = html;
+        z.classList.toggle('active', serie > 0);
     }
 
     hideGameOver() {
