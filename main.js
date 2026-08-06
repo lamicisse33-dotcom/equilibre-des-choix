@@ -48,6 +48,8 @@ class App {
         });
 
         this.engine = new GameEngine(this.persistence.getStats(), this.persistence.getHeritage());
+        // Le parcours : cinq etapes, de trois semaines a une annee.
+        import('./game-config.js').then(m => { this.parcours = m.PARCOURS; });
         this.audio = new AudioController(this.persistence.getSettings());
         
         this.duel = new DuelController({
@@ -402,7 +404,6 @@ class App {
         this.ui.lectureActivee = actif;
         this.ui.lastSyncConfig = { ...(this.ui.lastSyncConfig || {}), cardReading: actif };
         if (!actif) this.ui.arreterLecture?.();
-        this.home.majBoutonVoix?.(actif);
         const b = document.getElementById('config-card-reading');
         if (b) {
             b.textContent = actif ? 'ON' : 'OFF';
@@ -414,7 +415,13 @@ class App {
     conseilActif() {
         if (this.config.currentConfig.conseil === false) return false;
         if (this.config.currentConfig.conseil === true) return true;
-        return (this.persistence.getStats().gamesPlayed || 0) < 6;
+        // Le critere du nombre de parties etait mauvais : quelqu'un qui a
+        // beaucoup joue sans jamais gagner n'est pas un joueur experimente,
+        // c'est un joueur qu'on abandonne. Le conseil accompagne donc jusqu'a
+        // la premiere victoire, puis se retire.
+        const stats = this.persistence.getStats() || {};
+        const dejaGagne = (stats.unlockedTrophies || []).includes('premiere_victoire');
+        return !dejaGagne;
     }
 
     /**
@@ -515,6 +522,12 @@ class App {
         
         // Ecrit avant le tirage : la graine enregistree est celle d'avant la
         // main, donc une reprise redonne exactement les memes trois cartes.
+        // Les statistiques evoluent d'une partie a l'autre : le moteur doit
+        // voir les trophees a jour, sinon le filet ne se retire jamais -- ou
+        // pire, ne se declenche jamais.
+        this.engine.globalStats = this.persistence.getStats();
+        // L'etape courante pilote la duree de la partie.
+        this.engine.etapeParcours = this.persistence.getEtape();
         this.sauvegarder();
         this.ui.showAutosave();
         
@@ -580,9 +593,40 @@ class App {
         document.getElementById('loading-screen')?.appendChild(b);
     }
 
+    /**
+     * Avancement du parcours. Une etape franchie est acquise pour toujours ;
+     * un echec ne fait rejouer que l'etape en cours. C'est ce qui fait que
+     * perdre ne coute plus une soiree, mais une etape.
+     */
+    avancerParcours() {
+        const PARC = this.parcours || [];
+        const etape = this.persistence.getEtape();
+        if (!this.engine.isVictory) return { franchie: false, etape };
+
+        const e = PARC[Math.min(etape, PARC.length - 1)];
+        if (e) this.persistence.ajouterSemaines(e.semaines);
+
+        if (etape >= PARC.length - 1) {
+            // Le Sommet : la vie recommence, les titres restent.
+            this.persistence.setEtape(0);
+            this.persistence.setSemaines(0);
+            return { franchie: true, sommet: true, etape, suivante: PARC[0] };
+        }
+        this.persistence.setEtape(etape + 1);
+        return { franchie: true, sommet: false, etape, suivante: PARC[etape + 1] };
+    }
+
     async handleGameOver() {
         // Toute partie terminee entre au classement. Sans cet appel, l'ecran
         // restait vide quel que soit le nombre de parties.
+        // Avancement du parcours avant toute chose : l'ecran de fin doit
+        // annoncer l'etape franchie et proposer la suivante.
+        this.resultatParcours = this.avancerParcours();
+        if (this.resultatParcours && this.parcours) {
+            const e = this.parcours[Math.min(this.resultatParcours.etape, this.parcours.length - 1)];
+            this.resultatParcours.tenue = e ? e.cle : 'duree_generique';
+        }
+
         if (this.engine.turn > 0) {
             this.persistence.saveScore(
                 this.config.currentConfig.playerName || 'Gardien',
@@ -615,6 +659,8 @@ class App {
         this.persistence.clearGameProgress();
         this.home.updateContinueButton(false);
         
+        this.engine.resultatParcours = this.resultatParcours;
+        this.engine.semainesAcquises = this.persistence.getSemainesAcquises();
         this.ui.showGameOver(this.engine, isNewRecord, this.duel.isDuelActive ? this.opponentData : null);
         
         await this.transition.fade(0, 1500);

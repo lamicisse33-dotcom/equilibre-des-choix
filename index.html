@@ -1007,6 +1007,27 @@
             #advice-box { top: 62px; padding: 4px 12px; }
         }
 
+        /* --- BARRE D OBJECTIF --- */
+        #goal-bar {
+            width: 100%;
+            height: 5px;
+            margin-top: 6px;
+            background: rgba(197, 160, 89, 0.18);
+            border-radius: 3px;
+            overflow: hidden;
+        }
+        #goal-fill {
+            height: 100%;
+            width: 0%;
+            background: linear-gradient(90deg, var(--gold), var(--gold-bright));
+            border-radius: 3px;
+            transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        #goal-fill.proche {
+            background: linear-gradient(90deg, #f3e5ab, #fff);
+            box-shadow: 0 0 10px var(--gold-bright);
+        }
+
         .hidden {
             opacity: 0 !important;
             pointer-events: none !important;
@@ -1414,9 +1435,6 @@
                 <button id="stats-btn" class="menu-btn secondary" data-i18n="statistics">Statistiques</button>
                 <button id="leaderboard-btn" class="menu-btn secondary" data-i18n="leaderboard">Classement</button>
                 <button id="memories-btn" class="menu-btn secondary" data-i18n="memories">Galerie des Souvenirs</button>
-                <!-- Commande dediee a la lecture vocale : accessible depuis le
-                     menu, sans passer par les parametres. -->
-                <button id="voice-toggle-btn" class="menu-btn secondary">Lecture vocale : activée</button>
                 <button id="rules-btn" class="menu-btn secondary" data-i18n="rules">Règles</button>
                 <button id="credits-btn" class="menu-btn secondary" data-i18n="credits">Crédits</button>
                 <button id="home-settings-btn" class="menu-btn secondary" data-i18n="settings">Paramètres</button>
@@ -1691,9 +1709,13 @@
                     <div class="stat-label" data-i18n="score">Score</div>
                     <div id="score-value" class="stat-value">0</div>
                 </div>
+                <!-- L'equilibre total, cumul de toutes les parties, n'apprenait
+                     rien au joueur en cours de partie. Remplace par la
+                     progression vers l'objectif de victoire. -->
                 <div class="stat-box">
-                    <div class="stat-label" data-i18n="total_balance">Équilibre</div>
+                    <div class="stat-label" data-i18n="semaine">Semaine</div>
                     <div id="lifetime-value" class="stat-value">0</div>
+                    <div id="goal-bar"><div id="goal-fill"></div></div>
                 </div>
             </div>
         </div>
@@ -1762,8 +1784,10 @@
                     </div>
                     <!-- Lecture des cartes : commande explicite, independante
                          du volume de la voix. -->
+                    <!-- Lecture vocale : sa place est ici, avec les autres
+                         reglages, et non dans le menu d'accueil. -->
                     <div class="config-row">
-                        <label data-i18n="card_reading">Lecture des cartes</label>
+                        <label data-i18n="card_reading">Lecture vocale des cartes</label>
                         <button id="config-card-reading">ON</button>
                     </div>
                     <div class="config-row">

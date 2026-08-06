@@ -30,6 +30,7 @@ export class UIController {
             harmonyStreak: document.getElementById('harmony-streak'),
             cardWarning: document.getElementById('card-warning'),
             adviceBox: document.getElementById('advice-box'),
+            goalFill: document.getElementById('goal-fill'),
             netMessage: document.getElementById('net-message'),
             harmonyBadge: document.getElementById('harmony-badge'),
             settingsBtn: document.getElementById('settings-btn'),
@@ -382,7 +383,18 @@ export class UIController {
 
         updateText('score', gameState.score);
         updateText('turn', gameState.turn);
-        updateText('lifetime', gameState.lifetimeScore);
+        // La boite affiche desormais la progression vers l'objectif, pas le
+        // cumul de toutes les parties -- un nombre que le joueur ne pouvait
+        // relier a rien.
+        // La boite du haut annonce la duree a tenir et la semaine en cours :
+        // "Semaine 4 / 21". Le joueur sait toujours ou il en est.
+        const requis = gameState.semainesRequises ? gameState.semainesRequises() : 3;
+        updateText('lifetime', `${gameState.turn} / ${requis}`);
+        if (this.elements.goalFill) {
+            const part = Math.max(0, Math.min(1, (gameState.turn || 0) / requis));
+            this.elements.goalFill.style.width = (part * 100).toFixed(1) + '%';
+            this.elements.goalFill.classList.toggle('proche', part >= 0.75);
+        }
 
         let isAnyPillarInDanger = false;
 
@@ -453,8 +465,9 @@ export class UIController {
         this.majPeril(gameState.pillars);
         // Serie d'harmonie : sans ce rappel, le joueur gagnerait sans avoir vu
         // qu'il etait en train de gagner.
-        this.majSerieHarmonie(gameState.consecutiveHarmony || 0,
-                              gameState.isMeditationMode ? 0 : 4);
+        // L'harmonie n'est plus la condition de victoire mais elle double le
+        // score : on l'annonce comme un bonus, pas comme un objectif.
+        this.majBonusHarmonie(!!gameState.reachedHarmony);
 
         if (this.elements.dangerVignette) {
             if (isAnyPillarInDanger) {
@@ -970,6 +983,13 @@ export class UIController {
         const victoire = !!gameState.isVictory;
         const t = (k) => this.callbacks.getTranslation(k);
 
+        // --- LE PARCOURS ---
+        // L'ecran ne dit plus "vous avez perdu" ou "vous avez gagne" : il dit
+        // combien de temps le joueur a tenu son equilibre, et lance le defi
+        // suivant. C'est cette voix qui donne envie de recommencer.
+        const rp = gameState.resultatParcours || {};
+        const dureeTenue = t(rp.franchie && this.parcoursCle ? this.parcoursCle : 'duree_generique');
+
         if (this.elements.gameOverTitle) {
             this.elements.gameOverTitle.textContent = victoire ? t('victoire_titre')
                 : (isNewRecord ? "Un Nouvel Héritage" : "Le Cycle s'achève");
@@ -977,9 +997,21 @@ export class UIController {
                 (victoire || isNewRecord) ? 'var(--gold-bright)' : 'var(--gold)';
         }
         if (this.elements.gameOverDesc) {
-            this.elements.gameOverDesc.textContent = victoire ? t('victoire_desc')
-                : (isNewRecord ? "Votre sagesse a transcendé le temps."
-                               : "Un moment de calme avant le renouveau.");
+            let phrase;
+            if (rp.sommet) {
+                phrase = t('parcours_sommet');
+            } else if (rp.franchie && rp.suivante) {
+                // "Bravo, tu as tenu trois semaines. Voyons voir si tu peux
+                //  tenir six semaines."
+                phrase = t('parcours_bravo').replace('{tenu}', t(rp.tenue || 'duree_generique'))
+                       + ' ' + t('parcours_defi').replace('{suite}', t(rp.suivante.cle));
+            } else if (!victoire) {
+                phrase = t('parcours_echec').replace('{semaine}', gameState.turn)
+                       + ' ' + t('parcours_reprise');
+            } else {
+                phrase = t('victoire_desc');
+            }
+            this.elements.gameOverDesc.textContent = phrase;
         }
         // La cause de la mort n'a pas lieu d'etre quand on a gagne.
         if (victoire) this.elements.gameOverCause?.classList.add('hidden');
@@ -1056,6 +1088,18 @@ export class UIController {
     }
 
     /** Points d'harmonie : le joueur doit voir qu'il est en train de gagner. */
+    /** Signale le bonus d'harmonie : le score monte 2,5 fois plus vite. */
+    majBonusHarmonie(actif) {
+        const z = this.elements.harmonyStreak;
+        if (!z) return;
+        z.classList.toggle('hidden', !actif);
+        if (actif) {
+            z.innerHTML = `<span class="mot">${this.callbacks.getTranslation('harmonie_serie')}</span>`
+                        + `<span class="compte">${this.callbacks.getTranslation('harmonie_bonus')}</span>`;
+            z.classList.add('active');
+        }
+    }
+
     majSerieHarmonie(serie, requis) {
         const z = this.elements.harmonyStreak;
         if (!z) return;

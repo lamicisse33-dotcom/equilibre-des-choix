@@ -16,6 +16,8 @@ import {
     HARMONIE_PLAFOND,
     HARMONIE_ECART_MAX,
     HARMONIE_TOURS_VICTOIRE,
+    SCORE_VICTOIRE,
+    PARCOURS,
     PILLARS,
     RARITY_DEFINITIONS,
     PILLAR_DEFINITIONS,
@@ -37,11 +39,25 @@ export class GameEngine {
     // tue pas, il est ramene au centre avec un message qui nomme l'erreur.
     static PARTIES_PROTEGEES = 3;
 
+    /** Duree de l'etape en cours, en semaines. Une carte = une semaine. */
+    semainesRequises() {
+        const e = PARCOURS[Math.min(this.etapeParcours || 0, PARCOURS.length - 1)];
+        return e ? e.semaines : 3;
+    }
+
+    /** L'etape en cours, telle que l'interface doit la nommer. */
+    etapeCourante() {
+        return PARCOURS[Math.min(this.etapeParcours || 0, PARCOURS.length - 1)];
+    }
+
     /** Le filet ne joue qu'une fois par partie, sur les toutes premieres. */
     filetDisponible() {
         if (this.filetUtilise || this.isMeditationMode) return false;
-        const jouees = this.globalStats?.gamesPlayed ?? 0;
-        return jouees < GameEngine.PARTIES_PROTEGEES;
+        // Meme raison que pour le conseil : tant que le joueur n'a jamais
+        // gagne, il apprend encore. Compter les parties punissait celui qui
+        // s'acharne.
+        const trophees = this.globalStats?.unlockedTrophies || [];
+        return !trophees.includes('premiere_victoire');
     }
 
     constructor(stats = {}, heritage = { upgrades: {} }) {
@@ -54,6 +70,8 @@ export class GameEngine {
         this.reachedHarmony = false;
         this.consecutiveHarmony = 0;
         this.isVictory = false;
+        this.objectifVictoire = SCORE_VICTOIRE;
+        this.etapeParcours = this.etapeParcours || 0;
         this.filetUtilise = false;
         this.dernierFilet = null;
         this.currentSeed = 0;
@@ -117,6 +135,8 @@ export class GameEngine {
         this.reachedHarmony = false;
         this.consecutiveHarmony = 0;
         this.isVictory = false;
+        this.objectifVictoire = SCORE_VICTOIRE;
+        this.etapeParcours = this.etapeParcours || 0;
         this.filetUtilise = false;
         this.dernierFilet = null;
         this.history = [];
@@ -586,19 +606,17 @@ export class GameEngine {
         
         if (this.reachedHarmony) {
             this.consecutiveHarmony++;
-            // Victoire : l'harmonie tenue assez longtemps pour n'etre plus un
-            // hasard. Le mode Meditation, sans fin par nature, en est exclu.
-            // La victoire ne se cueille pas pendant la phase d'apprentissage :
-            // les premiers tours sont adoucis pour laisser comprendre, pas pour
-            // offrir le titre. Il faut avoir atteint la pleine puissance.
-            if (this.consecutiveHarmony >= HARMONIE_TOURS_VICTOIRE
-                && this.turn >= GameEngine.TOURS_DOUX
-                && !this.isMeditationMode && !this.isVictory) {
-                this.isVictory = true;
-                this.isGameOver = true;
-            }
         } else {
             this.consecutiveHarmony = 0;
+        }
+
+        // Victoire : avoir traverse la duree de l'etape sans qu'aucun pilier
+        // ne touche une borne. Le joueur ne joue plus jusqu'a mourir, il
+        // franchit une ligne d'arrivee.
+        if (!this.isMeditationMode && !this.isVictory && !this.isGameOver
+            && this.turn >= this.semainesRequises()) {
+            this.isVictory = true;
+            this.isGameOver = true;
         }
 
         const currentTrophyIds = (this.globalStats.unlockedTrophies || []).concat(this.unlockedTrophies);

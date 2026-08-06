@@ -213,6 +213,32 @@ export class PersistenceController {
      * appelee par personne : le classement restait vide en permanence, quel
      * que soit le nombre de parties jouees.
      */
+    /** Etape du parcours atteinte. Un palier franchi est acquis a jamais. */
+    getEtape() {
+        try { return parseInt(localStorage.getItem('equilibre_etape') || '0', 10) || 0; }
+        catch (e) { return 0; }
+    }
+
+    setEtape(n) {
+        try { localStorage.setItem('equilibre_etape', String(Math.max(0, n))); }
+        catch (e) { /* stockage indisponible */ }
+    }
+
+    /** Semaines d'equilibre cumulees sur tout le parcours. */
+    getSemainesAcquises() {
+        try { return parseInt(localStorage.getItem('equilibre_semaines') || '0', 10) || 0; }
+        catch (e) { return 0; }
+    }
+
+    ajouterSemaines(n) {
+        this.setSemaines(this.getSemainesAcquises() + n);
+    }
+
+    setSemaines(n) {
+        try { localStorage.setItem('equilibre_semaines', String(Math.max(0, n))); }
+        catch (e) { /* stockage indisponible */ }
+    }
+
     saveScore(name, score) {
         return this.saveDuelScore(name, score);
     }

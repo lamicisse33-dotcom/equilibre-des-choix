@@ -5,7 +5,6 @@ export class HomeController {
             homeScreen: document.getElementById('home-screen'),
             newGameBtn: document.getElementById('new-game-btn'),
             meditationBtn: document.getElementById('meditation-mode-btn'),
-            voiceToggleBtn: document.getElementById('voice-toggle-btn'),
             duelBtn: document.getElementById('duel-btn'),
             continueBtn: document.getElementById('continue-game-btn'),
             statsBtn: document.getElementById('stats-btn'),
@@ -63,10 +62,6 @@ export class HomeController {
         this.elements.meditationBtn?.addEventListener('click', () => this.showPantheonSelection(true));
         this.elements.duelBtn?.addEventListener('click', () => this.callbacks.onDuel());
 
-        // Lecture vocale : bascule directe depuis le menu.
-        this.elements.voiceToggleBtn?.addEventListener('click', () => {
-            this.callbacks.onToggleVoice?.();
-        });
         this.elements.continueBtn?.addEventListener('click', () => this.callbacks.onPlay(true));
         
         this.elements.statsBtn?.addEventListener('click', () => {
@@ -327,15 +322,6 @@ export class HomeController {
         [this.elements.duelBtn, this.elements.heritageBtn, this.elements.leaderboardBtn,
          this.elements.memoriesBtn, this.elements.statsBtn, this.elements.meditationBtn]
             .forEach(b => { if (b) b.style.display = this.premiereFois ? 'none' : ''; });
-    }
-
-    /** Met le libelle du bouton en accord avec l'etat de la lecture. */
-    majBoutonVoix(actif) {
-        const b = this.elements.voiceToggleBtn;
-        if (!b) return;
-        b.textContent = this.callbacks.getTranslation(actif ? 'voice_on' : 'voice_off');
-        b.style.borderColor = actif ? 'var(--gold)' : 'rgba(197,160,89,0.25)';
-        b.style.color = actif ? 'var(--gold)' : 'rgba(255,255,255,0.4)';
     }
 
     updateContinueButton(hasProgress) {
