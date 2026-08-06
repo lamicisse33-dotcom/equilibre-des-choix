@@ -15,7 +15,6 @@ export class UIController {
             cardRarity: document.getElementById('card-rarity'),
             cardDesc: document.getElementById('card-desc'),
             cardEffects: document.getElementById('card-effects'),
-            speechStopBtn: document.getElementById('speech-stop-btn'),
             tutorialLayer: document.getElementById('tutorial-layer'),
             tutorialStep: document.getElementById('tutorial-step'),
             tutorialText: document.getElementById('tutorial-text'),
@@ -26,9 +25,9 @@ export class UIController {
             carouselHint: document.getElementById('carousel-hint'),
             gameOverCause: document.getElementById('game-over-cause'),
             victoryTitle: document.getElementById('victory-rank'),
+            gameOverBanner: document.getElementById('game-over-banner'),
             fireworks: document.getElementById('fireworks'),
             harmonyStreak: document.getElementById('harmony-streak'),
-            cardWarning: document.getElementById('card-warning'),
             adviceBox: document.getElementById('advice-box'),
             goalFill: document.getElementById('goal-fill'),
             netMessage: document.getElementById('net-message'),
@@ -201,19 +200,6 @@ export class UIController {
         });
         this.elements.tutorialSkip?.addEventListener('click', () => this.fermerInitiation());
 
-        this.elements.speechStopBtn?.addEventListener('click', (e) => {
-            e.stopPropagation();
-            if (this.modeBouton === 'lire') {
-                // Geste direct de l'utilisateur : Safari l'accepte toujours.
-                this.lectureCoupee = false;
-                this.voixDeverrouillee = false;
-                this.deverrouillerVoix();
-                if (this.carteAffichee) this.lireCarte(this.carteAffichee);
-                return;
-            }
-            this.lectureCoupee = true;   // silence jusqu'a la prochaine carte
-            this.arreterLecture();
-        });
 
         this.elements.configLang.addEventListener('change', (e) => this.callbacks.onConfigChange('language', e.target.value));
         this.elements.configLangRef.addEventListener('change', (e) => this.callbacks.onConfigChange('language', e.target.value));
@@ -670,36 +656,6 @@ export class UIController {
         zone.innerHTML = html;
     }
 
-    /**
-     * Signale d'avance les consequences dangereuses d'une carte : sortie de la
-     * zone sure, ou pire, franchissement d'une borne mortelle.
-     */
-    majAvertissement(data, pillars) {
-        const z = this.elements.cardWarning;
-        if (!z) return;
-        const effets = data && (data.effects || data.effectsPerTurn);
-        if (!effets || !pillars) { z.classList.add('hidden'); return; }
-
-        const mortels = [], sorties = [];
-        for (const p in effets) {
-            const apres = (pillars[p] || 0) + (effets[p] || 0);
-            const nom = this.callbacks.getTranslation(`pillar_${p}`) || p;
-            if (apres <= 0 || apres >= 100) mortels.push(nom);
-            else if (apres < 40 || apres > 85) sorties.push(nom);
-        }
-        if (mortels.length) {
-            z.textContent = `⚠ ${mortels.join(', ')} — ${this.callbacks.getTranslation('avert_mortel')}`;
-            z.className = 'avert mortel';
-        } else if (sorties.length) {
-            z.textContent = `${sorties.join(', ')} — ${this.callbacks.getTranslation('avert_zone')}`;
-            z.className = 'avert';
-        } else {
-            z.classList.add('hidden');
-            return;
-        }
-        z.classList.remove('hidden');
-    }
-
     /** Message du filet : la premiere erreur enseigne au lieu de tuer. */
     montrerFilet(info) {
         const z = this.elements.netMessage;
@@ -727,7 +683,13 @@ export class UIController {
         z.classList.remove('hidden');
     }
 
+    /**
+     * Le bouton de lecture a ete retire du panneau de carte : la commande vit
+     * desormais dans les parametres. La methode reste en place, sans effet,
+     * pour que les appels existants n'aient pas a etre traques un a un.
+     */
     montrerBouton(mode) {
+        this.modeBouton = mode;
         const b = this.elements.speechStopBtn;
         if (!b) return;
         this.modeBouton = mode;
@@ -908,10 +870,6 @@ export class UIController {
         // Lecture automatique. Relancee a chaque nouvelle carte presentee ;
         // une carte deja lue n'est pas repetee tant qu'on reste dessus.
         this.carteAffichee = data;
-        // Avertissement avant le choix : quelle carte ferait sortir un pilier
-        // de la zone sure, ou pire, le tuerait. Le joueur voyait le danger
-        // seulement apres l'avoir subi.
-        this.majAvertissement(data, currentPillars);
         if (this.derniereCarteLue !== data.id) {
             this.derniereCarteLue = data.id;
             this.lectureCoupee = false;   // une nouvelle carte relance la voix
@@ -968,10 +926,13 @@ export class UIController {
 
         const summaryEl = document.getElementById('game-over-summary');
         if (summaryEl && gameState.history) {
-            let html = '<div style="margin-bottom: 10px; color: var(--gold); letter-spacing: 2px;">VOTRE PARCOURS</div>';
-            gameState.history.slice(-5).forEach(h => {
+            // Le parcours ne montrait que les cinq derniers tours et semblait
+            // commencer au tour 2. Une etape entiere y tient desormais, du
+            // premier choix au dernier.
+            let html = `<div style="margin-bottom: 10px; color: var(--gold); letter-spacing: 2px;">${this.callbacks.getTranslation('votre_parcours')}</div>`;
+            gameState.history.forEach(h => {
                 html += `<div style="margin-bottom: 5px; display: flex; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.05); padding-bottom: 2px;">
-                    <span>Tour ${h.turn + 1}: ${h.title}</span>
+                    <span>${this.callbacks.getTranslation('semaine')} ${h.turn + 1} : ${h.title}</span>
                 </div>`;
             });
             summaryEl.innerHTML = html;
@@ -1016,6 +977,14 @@ export class UIController {
         // La cause de la mort n'a pas lieu d'etre quand on a gagne.
         if (victoire) this.elements.gameOverCause?.classList.add('hidden');
 
+        // Le bandeau annoncait la fin de l'experience meme apres une reussite.
+        if (this.elements.gameOverBanner) {
+            this.elements.gameOverBanner.textContent =
+                t(victoire ? 'banniere_victoire' : 'banniere_defaite');
+            this.elements.gameOverBanner.style.color =
+                victoire ? 'var(--gold)' : '';
+        }
+
         const ecran = this.elements.gameOver;
         if (ecran) {
             ecran.classList.toggle('victoire', victoire);
@@ -1024,7 +993,13 @@ export class UIController {
         // Le titre gagne, annonce sous les scores.
         if (this.elements.victoryTitle) {
             this.elements.victoryTitle.classList.toggle('hidden', !victoire);
-            if (victoire) this.elements.victoryTitle.textContent = t('victoire_rang');
+            // Le rang etait ecrit en dur : il annoncait toujours "Éveillé",
+            // meme apres avoir franchi la deuxieme ou la troisieme etape.
+            if (victoire) {
+                const titre = (rp.titreEtape) || t('victoire_rang_defaut');
+                this.elements.victoryTitle.textContent =
+                    t('victoire_rang').replace('{titre}', titre);
+            }
         }
         if (victoire) this.lancerFeuxArtifice();
     }

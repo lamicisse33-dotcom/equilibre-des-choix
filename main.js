@@ -628,6 +628,8 @@ class App {
         if (this.resultatParcours && this.parcours) {
             const e = this.parcours[Math.min(this.resultatParcours.etape, this.parcours.length - 1)];
             this.resultatParcours.tenue = e ? e.cle : 'duree_generique';
+            // Le titre de l'etape reellement franchie, pas celui de la premiere.
+            this.resultatParcours.titreEtape = e ? e.titre : null;
         }
 
         if (this.engine.turn > 0) {

@@ -1,4 +1,4 @@
-const VERSION = 'v59';
+const VERSION = 'v61';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache

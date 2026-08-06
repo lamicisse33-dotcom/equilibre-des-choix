@@ -568,7 +568,6 @@
             #card-info #card-title { font-size: 1.32rem; margin-bottom: 8px; }
             #card-info #card-desc { font-size: 1.02rem; margin-bottom: 10px; line-height: 1.45; opacity: 1; }
             #card-info #card-effects { font-size: 0.95rem; line-height: 1.7; gap: 12px; }
-            #card-info #speech-stop-btn { margin-top: 10px; padding: 7px 14px; font-size: 0.68rem; }
             #card-info .confirm-hint { margin-top: 10px !important; font-size: 0.68rem !important; opacity: 0.55 !important; }
             #card-title {
                 font-size: 1.32rem;
@@ -934,23 +933,6 @@
             #harmony-streak { top: 34px; padding: 4px 10px; }
         }
 
-        /* --- AVERTISSEMENT SUR UNE CARTE --- */
-        #card-warning.avert {
-            margin-top: 8px;
-            font-family: var(--font-serif);
-            font-size: 0.7rem;
-            letter-spacing: 1px;
-            padding: 6px 12px;
-            border: 1px solid #f39c12;
-            color: #ffd18a;
-            background: rgba(60, 42, 8, 0.5);
-        }
-        #card-warning.avert.mortel {
-            border-color: #e74c3c;
-            color: #ff9d9d;
-            background: rgba(60, 10, 10, 0.55);
-        }
-
         /* --- FILET DES PREMIERES PARTIES --- */
         #net-message {
             position: absolute;
@@ -1037,7 +1019,6 @@
            fenetre de detail, le bandeau de synergie et le bouton de lecture
            masques laissaient donc deux bandes vides. Ici, on les replie. */
         #card-info #synergy-status.hidden,
-        #card-info #speech-stop-btn.hidden,
         #card-info #refresh-hand-btn.hidden {
             display: none !important;
         }
@@ -1809,16 +1790,8 @@
             <div id="card-title">Nom de la carte</div>
             <div id="card-desc">Description de l'action.</div>
             <div id="card-effects"></div>
-            <!-- Avertissement avant le choix -->
-            <div id="card-warning" class="hidden avert"></div>
             <!-- Lecture vocale : demarre a l'ouverture du panneau, ce bouton
                  l'interrompt. Il n'apparait que pendant la lecture. -->
-            <!-- Bouton a deux visages : arret pendant la lecture, ou commande
-                 manuelle si le navigateur a refuse la lecture automatique. -->
-            <div id="speech-stop-btn" class="hidden" style="pointer-events: auto; cursor: pointer; margin-top: 14px; display: inline-flex; align-items: center; gap: 8px; font-family: var(--font-serif); font-size: 0.62rem; letter-spacing: 2px; color: var(--gold); border: 1px solid var(--gold); padding: 6px 14px; border-radius: 2px; background: rgba(0,0,0,0.4);">
-                <svg viewBox="0 0 24 24" width="12" height="12" fill="currentColor"><rect x="6" y="6" width="12" height="12" rx="1"/></svg>
-                <span>ARRÊTER LA LECTURE</span>
-            </div>
             <div class="confirm-hint" style="font-family: var(--font-serif); font-size: 0.65rem; margin-top: 20px; opacity: 0.4; letter-spacing: 2px; text-transform: uppercase;" data-i18n="confirm_click">Confirmer par un second clic</div>
         </div>
     </div>
@@ -1847,7 +1820,7 @@
     </div>
 
     <div id="game-over" class="hidden">
-        <div style="font-family: var(--font-serif); font-size: 0.8rem; letter-spacing: 5px; opacity: 0.6; margin-bottom: 20px;" data-i18n="game_over_title">L'EXPÉRIENCE S'ACHÈVE</div>
+        <div id="game-over-banner" style="font-family: var(--font-serif); font-size: 0.8rem; letter-spacing: 5px; opacity: 0.6; margin-bottom: 20px;">L'EXPÉRIENCE S'ACHÈVE</div>
         <h2 data-i18n="game_over_subtitle">Équilibre Rompu</h2>
         <p style="font-family: var(--font-serif); letter-spacing: 2px; opacity: 0.8;" data-i18n="game_over_desc">Votre voyage s'arrête ici.</p>
         <!-- Cause de la fin : sans elle, un nouveau joueur ne comprend pas
@@ -1874,7 +1847,7 @@
         </div>
         
         <div id="victory-rank" class="hidden"></div>
-        <div id="game-over-summary" style="margin-top: 18px; max-height: 150px; overflow-y: auto; font-size: 0.78rem; color: rgba(255,255,255,0.62); border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
+        <div id="game-over-summary" style="margin-top: 18px; max-height: 190px; overflow-y: auto; font-size: 0.78rem; color: rgba(255,255,255,0.62); border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
             <!-- Summary of the life lived will be injected here -->
         </div>
         
