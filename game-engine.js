@@ -18,6 +18,7 @@ import {
     HARMONIE_TOURS_VICTOIRE,
     SCORE_VICTOIRE,
     PARCOURS,
+    DERIVE_CENTRALE,
     PILLARS,
     RARITY_DEFINITIONS,
     PILLAR_DEFINITIONS,
@@ -48,6 +49,20 @@ export class GameEngine {
     /** L'etape en cours, telle que l'interface doit la nommer. */
     etapeCourante() {
         return PARCOURS[Math.min(this.etapeParcours || 0, PARCOURS.length - 1)];
+    }
+
+    /** La zone d'equilibre a atteindre pour cette etape. */
+    zoneEquilibre() {
+        const e = this.etapeCourante();
+        return { bas: e ? e.bas : 40, haut: e ? e.haut : 60 };
+    }
+
+    /** Combien de piliers sont actuellement dans la zone. C'est la cible que
+     *  le joueur a sous les yeux : il cherche a la porter a quatre. */
+    pilliersEnZone() {
+        const z = this.zoneEquilibre();
+        return Object.values(this.pillars)
+            .filter(v => v >= z.bas && v <= z.haut).length;
     }
 
     /** Le filet ne joue qu'une fois par partie, sur les toutes premieres. */
@@ -613,9 +628,18 @@ export class GameEngine {
         // Victoire : avoir traverse la duree de l'etape sans qu'aucun pilier
         // ne touche une borne. Le joueur ne joue plus jusqu'a mourir, il
         // franchit une ligne d'arrivee.
-        if (!this.isMeditationMode && !this.isVictory && !this.isGameOver
+        // Le temps ramene chaque pilier vers le centre.
+        if (!this.isGameOver) {
+            for (const p in this.pillars) {
+                this.pillars[p] += (50 - this.pillars[p]) * DERIVE_CENTRALE;
+            }
+        }
+
+        // Fin de l'etape : on gagne si les quatre piliers sont dans la zone.
+        // Sinon la duree est passee sans que l'equilibre soit trouve.
+        if (!this.isMeditationMode && !this.isGameOver
             && this.turn >= this.semainesRequises()) {
-            this.isVictory = true;
+            this.isVictory = this.pilliersEnZone() === 4;
             this.isGameOver = true;
         }
 

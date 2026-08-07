@@ -205,13 +205,21 @@ export const SCORE_VICTOIRE = 2000;
 // Une carte represente une semaine de vie. Le joueur ne joue plus jusqu'a
 // mourir : il traverse une duree. Chaque etape franchie est acquise pour
 // toujours ; un echec ne fait rejouer que l'etape en cours.
+// Chaque etape a sa zone d'equilibre. Elle s'elargit avec la duree : tenir un
+// an au centre exact serait impossible, et le joueur voit la zone s'ecarter,
+// signe que l'epreuve change de nature.
 export const PARCOURS = [
-    { id: 'trois_semaines', semaines: 3,  cle: 'duree_3_semaines', titre: "L'Éveil" },
-    { id: 'six_semaines',   semaines: 6,  cle: 'duree_6_semaines', titre: "La Constance" },
-    { id: 'trois_mois',     semaines: 13, cle: 'duree_3_mois',     titre: "L'Enracinement" },
-    { id: 'six_mois',       semaines: 26, cle: 'duree_6_mois',     titre: "La Persévérance" },
-    { id: 'une_annee',      semaines: 52, cle: 'duree_1_an',       titre: "Le Grand Équilibre" }
+    { id: 'trois_semaines', semaines: 3,  bas: 40, haut: 60, cle: 'duree_3_semaines', titre: "L'Éveil" },
+    { id: 'six_semaines',   semaines: 6,  bas: 38, haut: 62, cle: 'duree_6_semaines', titre: "La Constance" },
+    { id: 'trois_mois',     semaines: 13, bas: 35, haut: 65, cle: 'duree_3_mois',     titre: "L'Enracinement" },
+    { id: 'six_mois',       semaines: 26, bas: 32, haut: 68, cle: 'duree_6_mois',     titre: "La Persévérance" },
+    { id: 'une_annee',      semaines: 52, bas: 28, haut: 72, cle: 'duree_1_an',       titre: "Le Grand Équilibre" }
 ];
+
+// Le temps ramene doucement chaque pilier vers le centre. Sans cela, le gain
+// net des cartes faisait enfler tous les piliers ensemble et les longues
+// etapes devenaient impossibles quel que soit le talent.
+export const DERIVE_CENTRALE = 0.15;
 
 export const SCENARIOS = [
     // spirituality

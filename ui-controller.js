@@ -30,6 +30,7 @@ export class UIController {
             harmonyStreak: document.getElementById('harmony-streak'),
             adviceBox: document.getElementById('advice-box'),
             goalFill: document.getElementById('goal-fill'),
+            goalBox: document.getElementById('goal-box'),
             netMessage: document.getElementById('net-message'),
             harmonyBadge: document.getElementById('harmony-badge'),
             settingsBtn: document.getElementById('settings-btn'),
@@ -374,10 +375,19 @@ export class UIController {
         // relier a rien.
         // La boite du haut annonce la duree a tenir et la semaine en cours :
         // "Semaine 4 / 21". Le joueur sait toujours ou il en est.
+        // La boite du haut porte la cible : combien de piliers sont dans la
+        // zone. C'est le seul chiffre que le joueur cherche a faire monter.
         const requis = gameState.semainesRequises ? gameState.semainesRequises() : 3;
-        updateText('lifetime', `${gameState.turn} / ${requis}`);
+        const enZone = gameState.pilliersEnZone ? gameState.pilliersEnZone() : 0;
+        updateText('lifetime', `${enZone} / 4`);
+        updateText('semaine-restante', `${this.callbacks.getTranslation('semaine')} ${gameState.turn} / ${requis}`);
+        if (this.elements.goalBox) {
+            this.elements.goalBox.classList.toggle('complet', enZone === 4);
+        }
+        // La zone visee, marquee sur chaque jauge.
+        if (gameState.zoneEquilibre) this.majZoneJauges(gameState.zoneEquilibre());
         if (this.elements.goalFill) {
-            const part = Math.max(0, Math.min(1, (gameState.turn || 0) / requis));
+            const part = Math.max(0, Math.min(1, enZone / 4));
             this.elements.goalFill.style.width = (part * 100).toFixed(1) + '%';
             this.elements.goalFill.classList.toggle('proche', part >= 0.75);
         }
@@ -594,17 +604,26 @@ export class UIController {
     effetsEnMots(data) {
         const effets = data.effectsPerTurn || data.effects;
         if (!effets) return '';
-        const plus = this.callbacks.getTranslation('voice_plus') || 'plus';
-        const moins = this.callbacks.getTranslation('voice_moins') || 'moins';
-        const parTour = data.effectsPerTurn ? (this.callbacks.getTranslation('voice_par_tour') || '') : '';
+        const t = (k) => this.callbacks.getTranslation(k);
+        const plus = t('voice_plus') || 'plus';
+        const moins = t('voice_moins') || 'moins';
+        const parTour = data.effectsPerTurn ? (t('voice_par_tour') || '') : '';
         const morceaux = [];
         for (const p in effets) {
             const v = effets[p];
             if (!v) continue;
-            const nom = this.callbacks.getTranslation(`pillar_${p}`) || p;
-            morceaux.push(`${nom} ${v > 0 ? plus : moins} ${Math.abs(v)}${parTour}`);
+            const nom = t(`pillar_${p}`) || p;
+            // "ta Spiritualite", "ton Amour" : le possessif accompagne chaque
+            // pilier pour que l'enonce forme une vraie phrase.
+            const poss = t(`voice_poss_${p}`);
+            const tete = (poss && poss !== `voice_poss_${p}`) ? `${poss} ${nom}` : nom;
+            morceaux.push(`${tete} ${t('voice_de') || 'de'} ${v > 0 ? plus : moins} ${Math.abs(v)}${parTour}`);
         }
-        return morceaux.length ? morceaux.join(', ') + '.' : '';
+        if (!morceaux.length) return '';
+        // "Ton choix impactera ta Spiritualite de plus 6, ton Amour de plus 8..."
+        const intro = t('voice_intro');
+        const phrase = morceaux.join(', ') + '.';
+        return (intro && intro !== 'voice_intro') ? `${intro} ${phrase}` : phrase;
     }
 
     arreterLecture() {
@@ -688,6 +707,18 @@ export class UIController {
      * desormais dans les parametres. La methode reste en place, sans effet,
      * pour que les appels existants n'aient pas a etre traques un a un.
      */
+    /**
+     * Trace la zone visee sur les quatre jauges. Le joueur voit ou ses piliers
+     * doivent se tenir, au lieu de deviner une regle abstraite.
+     */
+    majZoneJauges(zone) {
+        if (this._zoneTracee && this._zoneTracee.bas === zone.bas) return;
+        this._zoneTracee = zone;
+        document.documentElement.style.setProperty('--zone-bas', zone.bas + '%');
+        document.documentElement.style.setProperty('--zone-haut', zone.haut + '%');
+        document.documentElement.style.setProperty('--zone-large', (zone.haut - zone.bas) + '%');
+    }
+
     montrerBouton(mode) {
         this.modeBouton = mode;
         const b = this.elements.speechStopBtn;

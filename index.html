@@ -910,8 +910,8 @@
             content: '';
             position: absolute;
             left: 0; right: 0;
-            bottom: 40%;
-            height: 45%;
+            bottom: var(--zone-bas, 40%);
+            height: var(--zone-large, 20%);
             background: rgba(197, 160, 89, 0.10);
             border-top: 1px solid rgba(197, 160, 89, 0.45);
             border-bottom: 1px solid rgba(197, 160, 89, 0.45);
@@ -921,7 +921,8 @@
         @media (max-width: 768px) {
             /* En portrait les jauges sont horizontales : la zone aussi. */
             .pillar-bar::before {
-                left: 40%; right: 15%;
+                left: var(--zone-bas, 40%);
+                right: calc(100% - var(--zone-haut, 60%));
                 top: 0; bottom: 0;
                 height: auto;
                 border-top: none; border-bottom: none;
@@ -1005,6 +1006,23 @@
             border-radius: 3px;
             transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1);
         }
+        #semaine-restante {
+            margin-top: 5px;
+            font-family: var(--font-serif);
+            font-size: 0.52rem;
+            letter-spacing: 1px;
+            color: rgba(197, 160, 89, 0.75);
+            white-space: nowrap;
+        }
+        /* Les quatre piliers dans la zone : l'objectif est atteint. */
+        #goal-box.complet {
+            border-color: var(--gold-bright);
+            box-shadow: 0 0 18px rgba(197, 160, 89, 0.45);
+        }
+        #goal-box.complet #goal-fill {
+            background: linear-gradient(90deg, #f3e5ab, #fff);
+        }
+
         #goal-fill.proche {
             background: linear-gradient(90deg, #f3e5ab, #fff);
             box-shadow: 0 0 10px var(--gold-bright);
@@ -1693,10 +1711,11 @@
                 <!-- L'equilibre total, cumul de toutes les parties, n'apprenait
                      rien au joueur en cours de partie. Remplace par la
                      progression vers l'objectif de victoire. -->
-                <div class="stat-box">
-                    <div class="stat-label" data-i18n="semaine">Semaine</div>
+                <div class="stat-box" id="goal-box">
+                    <div class="stat-label" data-i18n="equilibre_cible">Équilibre</div>
                     <div id="lifetime-value" class="stat-value">0</div>
                     <div id="goal-bar"><div id="goal-fill"></div></div>
+                    <div id="semaine-restante">Semaine 0 / 3</div>
                 </div>
             </div>
         </div>
