@@ -134,6 +134,44 @@ export class AudioController {
         }
     }
 
+    /**
+     * Silence immediat de toutes les musiques pendant un enonce vocal.
+     * fadeBGM ne traitait que deux pistes sur cinq, et son fondu de 220 ms
+     * laissait le son couvrir le debut de la phrase. Sur iOS, un canal occupe
+     * empeche purement et simplement la synthese de demarrer.
+     */
+    couperPourVoix() {
+        if (this._voixCoupe) return;
+        this._voixCoupe = {};
+        for (const nom of ['bgm', 'bgmReflection', 'bgmMenu', 'defeatAmbient', 'signature']) {
+            const n = this.nodes[nom];
+            if (!n || n.paused) continue;
+            this._voixCoupe[nom] = n.volume;
+            n.volume = 0;              // sans fondu : la voix part aussitot
+        }
+    }
+
+    /** Retour de la musique, en fondu doux, une fois l'enonce termine. */
+    retablirApresVoix(turn = 0) {
+        const memoire = this._voixCoupe;
+        if (!memoire) return;
+        this._voixCoupe = null;
+        clearInterval(this._retourVoix);
+
+        // Fondu autonome, sans TWEEN : celui-ci depend de la boucle de rendu,
+        // qui s'arrete quand l'onglet passe en arriere-plan. La musique
+        // serait alors restee muette pour toujours.
+        const debut = Date.now(), duree = 700;
+        this._retourVoix = setInterval(() => {
+            const t = Math.min(1, (Date.now() - debut) / duree);
+            for (const nom in memoire) {
+                const n = this.nodes[nom];
+                if (n) n.volume = memoire[nom] * t;
+            }
+            if (t >= 1) clearInterval(this._retourVoix);
+        }, 40);
+    }
+
     fadeBGM(targetFactor, duration = 1000, turn = 0) {
         if (this.nodes.bgm) {
             const target = 0.15 * this.settings.music * targetFactor;

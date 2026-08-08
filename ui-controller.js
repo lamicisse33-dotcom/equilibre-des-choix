@@ -52,6 +52,8 @@ export class UIController {
             configLightMode: document.getElementById('config-light-mode'),
             configCardReading: document.getElementById('config-card-reading'),
             configConseil: document.getElementById('config-conseil'),
+            configCardReadingRef: document.getElementById('config-card-reading-ref'),
+            configConseilRef: document.getElementById('config-conseil-ref'),
             historyBtn: document.getElementById('history-btn'),
             historyOverlay: document.getElementById('history-overlay'),
             historyList: document.getElementById('history-list'),
@@ -220,17 +222,21 @@ export class UIController {
         // Lecture des cartes : commande explicite. La couper arrete aussi
         // l'enonce en cours, sans attendre la carte suivante.
         // Conseil : automatique, toujours, ou jamais.
-        this.elements.configConseil?.addEventListener('click', () => {
+        const basculerConseil = () => {
             const suite = { null: true, true: false, false: null };
             const actuel = this.lastSyncConfig?.conseil ?? null;
             this.callbacks.onConfigChange('conseil', suite[String(actuel)]);
-        });
+        };
+        this.elements.configConseil?.addEventListener('click', basculerConseil);
+        this.elements.configConseilRef?.addEventListener('click', basculerConseil);
 
-        this.elements.configCardReading?.addEventListener('click', () => {
+        const basculerLecture = () => {
             const actif = !(this.lastSyncConfig?.cardReading ?? true);
             this.callbacks.onConfigChange('cardReading', actif);
             if (!actif) this.arreterLecture();
-        });
+        };
+        this.elements.configCardReading?.addEventListener('click', basculerLecture);
+        this.elements.configCardReadingRef?.addEventListener('click', basculerLecture);
 
         this.elements.configConfirmClickRef?.addEventListener('click', () => {
             this.callbacks.onConfigChange('confirmClick', !this.lastSyncConfig?.confirmClick);
@@ -324,18 +330,17 @@ export class UIController {
         if (this.elements.configLightMode) {
             this.elements.configLightMode.textContent = config.lightMode ? 'ON' : 'OFF';
         }
-        if (this.elements.configConseil) {
-            const c = config.conseil;
-            this.elements.configConseil.textContent =
-                c === true ? 'ON' : (c === false ? 'OFF' : 'AUTO');
+        const libelleConseil = config.conseil === true ? 'ON'
+                             : (config.conseil === false ? 'OFF' : 'AUTO');
+        if (this.elements.configConseil) this.elements.configConseil.textContent = libelleConseil;
+        if (this.elements.configConseilRef) this.elements.configConseilRef.textContent = libelleConseil;
+        const actifLecture = config.cardReading !== false;
+        for (const b of [this.elements.configCardReading, this.elements.configCardReadingRef]) {
+            if (!b) continue;
+            b.textContent = actifLecture ? 'ON' : 'OFF';
+            b.style.borderColor = actifLecture ? 'var(--gold)' : 'rgba(197,160,89,0.3)';
         }
-        if (this.elements.configCardReading) {
-            const actif = config.cardReading !== false;
-            this.elements.configCardReading.textContent = actif ? 'ON' : 'OFF';
-            this.elements.configCardReading.style.borderColor =
-                actif ? 'var(--gold)' : 'rgba(197,160,89,0.3)';
-            this.lectureActivee = actif;
-        }
+        this.lectureActivee = actifLecture;
         if (this.elements.configLightModeRef) {
             this.elements.configLightModeRef.textContent = config.lightMode ? 'ON' : 'OFF';
             this.elements.configLightModeRef.style.borderColor = config.lightMode ? 'var(--gold)' : 'rgba(197,160,89,0.3)';

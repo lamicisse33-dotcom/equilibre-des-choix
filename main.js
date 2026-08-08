@@ -174,7 +174,7 @@ class App {
                     this.config.currentConfig.conseil = val;
                     this.persistence.saveSettings?.(this.config.currentConfig);
                     this.ui.lastSyncConfig = { ...(this.ui.lastSyncConfig || {}), conseil: val };
-                    this.ui.syncSettings?.(this.config.currentConfig);
+                    this.ui.syncConfig?.(this.config.currentConfig);
                 }
             },
             onPauseStateChange: (isPaused) => {
@@ -194,12 +194,12 @@ class App {
             onLectureDebut: () => {
                 if (this._musiqueBaissee) return;
                 this._musiqueBaissee = true;
-                this.audio.fadeBGM(0, 220);
+                this.audio.couperPourVoix();
             },
             onLectureFin: () => {
                 if (!this._musiqueBaissee) return;
                 this._musiqueBaissee = false;
-                if (!this.isPaused) this.audio.fadeBGM(1.0, 600, this.engine.turn);
+                if (!this.isPaused) this.audio.retablirApresVoix(this.engine.turn);
             },
             onRestart: () => this.restartGame(),
             onRestartHover: () => this.audio.playSFX('ui-click-sfx', 0.1),
@@ -403,9 +403,13 @@ class App {
         this.persistence.saveSettings?.(this.config.currentConfig);
         this.ui.lectureActivee = actif;
         this.ui.lastSyncConfig = { ...(this.ui.lastSyncConfig || {}), cardReading: actif };
+        // Un seul chemin de synchronisation, pour que les deux panneaux et le
+        // moteur ne puissent jamais diverger.
+        this.ui.syncConfig?.(this.config.currentConfig);
         if (!actif) this.ui.arreterLecture?.();
-        const b = document.getElementById('config-card-reading');
-        if (b) {
+        for (const id of ['config-card-reading', 'config-card-reading-ref']) {
+            const b = document.getElementById(id);
+            if (!b) continue;
             b.textContent = actif ? 'ON' : 'OFF';
             b.style.borderColor = actif ? 'var(--gold)' : 'rgba(197,160,89,0.3)';
         }
