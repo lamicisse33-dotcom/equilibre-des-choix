@@ -526,8 +526,17 @@ class App {
         // voir les trophees a jour, sinon le filet ne se retire jamais -- ou
         // pire, ne se declenche jamais.
         this.engine.globalStats = this.persistence.getStats();
-        // L'etape courante pilote la duree de la partie.
+        // L'etape courante pilote la duree de la partie. Une sauvegarde
+        // anterieure au parcours ne contient pas cette valeur : sans ce
+        // rappel, la partie tournait indefiniment, sans victoire ni defaite.
         this.engine.etapeParcours = this.persistence.getEtape();
+        // Partie reprise plus longue que son etape : on la cloture proprement
+        // au lieu de la laisser courir sans fin.
+        if (!this.engine.isGameOver && !this.engine.isMeditationMode
+            && this.engine.turn > this.engine.semainesRequises()) {
+            this.engine.isVictory = this.engine.pilliersEnZone() === 4;
+            this.engine.isGameOver = true;
+        }
         this.sauvegarder();
         this.ui.showAutosave();
         

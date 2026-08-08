@@ -31,6 +31,7 @@ export class UIController {
             adviceBox: document.getElementById('advice-box'),
             goalFill: document.getElementById('goal-fill'),
             goalBox: document.getElementById('goal-box'),
+            semaineRestante: document.getElementById('semaine-restante'),
             netMessage: document.getElementById('net-message'),
             harmonyBadge: document.getElementById('harmony-badge'),
             settingsBtn: document.getElementById('settings-btn'),
@@ -380,7 +381,12 @@ export class UIController {
         const requis = gameState.semainesRequises ? gameState.semainesRequises() : 3;
         const enZone = gameState.pilliersEnZone ? gameState.pilliersEnZone() : 0;
         updateText('lifetime', `${enZone} / 4`);
-        updateText('semaine-restante', `${this.callbacks.getTranslation('semaine')} ${gameState.turn} / ${requis}`);
+        // updateText resout les identifiants via this.elements : la ligne des
+        // semaines n'y figurait pas, elle restait donc figee a "Semaine 0 / 3".
+        if (this.elements.semaineRestante) {
+            this.elements.semaineRestante.textContent =
+                `${this.callbacks.getTranslation('semaine')} ${gameState.turn} / ${requis}`;
+        }
         if (this.elements.goalBox) {
             this.elements.goalBox.classList.toggle('complet', enZone === 4);
         }
@@ -639,7 +645,25 @@ export class UIController {
      * Ferme le panneau de detail. Point de passage unique : toute voie qui
      * masque la fenetre coupe aussi la lecture, sans exception.
      */
+    /** Les reperes du carrousel reviennent quand le panneau se referme. */
+    rendreReperes() {
+        const d = this._dernierCarrousel;
+        const zone = this.elements.carouselDots;
+        if (!zone || !d || !d.total || d.total < 2) return;
+        // On reconstruit directement : passer par majReperesCarrousel
+        // relisait l'etat du panneau, qui n'est pas encore referme.
+        let html = `<span class="mot">${this.callbacks.getTranslation('conseil') ? '' : ''}</span>`;
+        html = '';
+        for (let i = 0; i < d.total; i++) {
+            html += `<span class="point${i === d.index ? ' actif' : ''}"></span>`;
+        }
+        zone.innerHTML = html;
+        zone.classList.remove('hidden');
+        this.elements.carouselHint?.classList.remove('hidden');
+    }
+
     masquerDetail() {
+        setTimeout(() => this.rendreReperes(), 60);
         this.arreterLecture();
         this.derniereCarteLue = null;
         this.elements.cardInfo?.classList.add('hidden');
@@ -662,6 +686,15 @@ export class UIController {
     majReperesCarrousel(index, total) {
         const zone = this.elements.carouselDots;
         if (!zone) return;
+        // Les points et le rappel du geste se glissaient au milieu du panneau
+        // de detail quand celui-ci etait ouvert : on les efface le temps de la
+        // lecture d'une carte.
+        this._dernierCarrousel = { index, total };
+        if (this.elements.cardInfo && !this.elements.cardInfo.classList.contains('hidden')) {
+            zone.classList.add('hidden');
+            this.elements.carouselHint?.classList.add('hidden');
+            return;
+        }
         if (index === null || index === undefined || !total || total < 2) {
             zone.innerHTML = '';
             if (this.elements.carouselHint) this.elements.carouselHint.style.opacity = '0';

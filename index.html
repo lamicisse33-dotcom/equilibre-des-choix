@@ -843,8 +843,9 @@
             display: none;
         }
         @media (max-aspect-ratio: 85/100) {
-            #carousel-dots { display: flex; bottom: 116px; }
-            #carousel-hint { display: block; bottom: 138px; }
+            /* Au-dessus du panneau de detail, jamais dedans. */
+            #carousel-dots { display: flex; bottom: 42%; }
+            #carousel-hint { display: block; bottom: calc(42% + 22px); }
         }
 
         /* --- VICTOIRE --- */
