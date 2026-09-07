@@ -1,0 +1,6 @@
+# ÉQUILIBRE DES CHOIX — equilibredeschoix.khalam.app
+# Un jeu de KHALAM. Tout est public.
+User-agent: *
+Allow: /
+
+Sitemap: https://equilibredeschoix.khalam.app/sitemap.xml
