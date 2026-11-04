@@ -90,6 +90,7 @@ export class GameEngine {
         this.filetUtilise = false;
         this.dernierFilet = null;
         this.currentSeed = 0;
+        this.cardSerial = 0;
         this.history = []; // History of choices
         this.activeEvents = []; // Active persistent effects
         this.unlockedTrophies = []; // New trophies in this run
@@ -172,6 +173,7 @@ export class GameEngine {
         this.activeModifiers = { ...this.nextTurnModifier };
         this.triggeredAbilities = [];
         this.currentSeed = seed !== null ? seed : Math.floor(Math.random() * 1000000);
+        this.cardSerial = 0;
     }
 
     loadState(state) {
@@ -186,7 +188,13 @@ export class GameEngine {
         // harmony_mastery) et ses multiplicateurs jusqu'a la fin de la partie.
         this.selectedPantheon = state.selectedPantheon || null;
         this.triggeredAbilities = state.triggeredAbilities || [];
-        this.currentSeed = state.seed || state.currentSeed;
+        this.currentSeed = state.seed ?? state.currentSeed ?? 0;
+        this.cardSerial = state.cardSerial ?? 0;
+        this.etapeParcours = Math.max(0, Math.min(PARCOURS.length - 1, state.etapeParcours ?? 0));
+        this.filetUtilise = !!state.filetUtilise;
+        this.reachedHarmony = !!state.reachedHarmony;
+        this.isGameOver = !!state.isGameOver;
+        this.isVictory = !!state.isVictory;
         this.history = state.history || [];
         this.activeEvents = state.activeEvents || [];
         this.recentScenarios = state.recentScenarios || [];
@@ -257,7 +265,7 @@ export class GameEngine {
         if (this.turn > 5 && this.seededRandom() < 0.12) {
             const event = WORLD_EVENTS[Math.floor(this.seededRandom() * WORLD_EVENTS.length)];
             const eventCard = {
-                id: 'event-' + Math.random().toString(36).substr(2, 5),
+                id: `event-${this.turn}-${this.cardSerial++}`,
                 title: event.title,
                 category: "mixed",
                 rarity: "epic",
@@ -337,7 +345,7 @@ export class GameEngine {
     createCardFromScenario(scenario, scale) {
         const rarityInfo = RARITY_DEFINITIONS[scenario.rarity || 'common'];
         const card = {
-            id: Math.random().toString(36).substr(2, 9),
+            id: `card-${this.turn}-${this.cardSerial++}`,
             title: scenario.title,
             category: scenario.category,
             rarity: scenario.rarity || 'common',
@@ -497,6 +505,21 @@ export class GameEngine {
         this.calculateProgression();
     }
 
+    /** Simule exactement le prochain tour, sans consommer la graine ni les secours. */
+    previewCard(card) {
+        const clone = new GameEngine();
+        Object.assign(clone, JSON.parse(JSON.stringify(this)));
+        clone.applyCard(JSON.parse(JSON.stringify(card)));
+        return {
+            pillars: { ...clone.pillars }, score: clone.score,
+            deltaScore: clone.score - this.score,
+            inZone: clone.pilliersEnZone(), isGameOver: clone.isGameOver,
+            isVictory: clone.isVictory, harmony: clone.reachedHarmony,
+            safetyNet: clone.filetUtilise && !this.filetUtilise,
+            activeEvents: clone.activeEvents, abilities: clone.triggeredAbilities
+        };
+    }
+
     applyPantheonPassives() {
         if (!this.selectedPantheon || !this.selectedPantheon.ability) return;
 
@@ -608,7 +631,7 @@ export class GameEngine {
         let addedScore = Math.floor(balanceFactor * harmonyMultiplier * turnFactor);
         
         // Pantheon: Harmony Mastery
-        if (this.reachedHarmony && this.selectedPantheon?.ability?.id === 'harmony_mastery') {
+        if (isBalanced && this.selectedPantheon?.ability?.id === 'harmony_mastery') {
             addedScore *= 2;
             if (!this.triggeredAbilities.includes('harmony_mastery')) {
                 this.triggeredAbilities.push('harmony_mastery');
