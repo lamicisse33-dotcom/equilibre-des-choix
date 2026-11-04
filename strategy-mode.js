@@ -41,3 +41,14 @@ export function duelOutcome(player,opponent) {
   if(player.isVictory!==opponent.isVictory)return player.isVictory?1:-1;
   return Math.sign(player.score-opponent.score);
 }
+/** La Sage dispose, comme le joueur, de deux renouvellements au maximum. */
+export function playSageTurn(engine,cards,budget=2) {
+  if(engine.isGameOver)return {card:null,hand:cards,redrawsLeft:budget};
+  let choice=chooseSage(engine,cards);
+  while(engine.activeModifiers.refreshAvailable||(budget>0&&evaluateChoice(engine,choice)<100)){
+    if(engine.activeModifiers.refreshAvailable)engine.activeModifiers.refreshAvailable=false;else budget--;
+    cards=engine.generateCards();choice=chooseSage(engine,cards);
+  }
+  engine.applyCard(choice);
+  return {card:choice,hand:engine.isGameOver?cards:engine.generateCards(),redrawsLeft:budget};
+}
