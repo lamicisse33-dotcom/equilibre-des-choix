@@ -79,6 +79,8 @@ export class PersistenceController {
             filetUtilise: gameState.filetUtilise,
             reachedHarmony: gameState.reachedHarmony,
             cardSerial: gameState.cardSerial,
+            refreshCredits: gameState.refreshCredits,
+            duelState: gameState.duelState,
             score: gameState.score,
             turn: gameState.turn,
             seed: gameState.currentSeed,
