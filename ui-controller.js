@@ -1,4 +1,5 @@
-import { PILLAR_DEFINITIONS, RARITY_DEFINITIONS, MECHANICS } from './game-config.js';
+import {duelOutcome} from './strategy-mode.js?v=70';
+import { PILLARS, PILLAR_DEFINITIONS, RARITY_DEFINITIONS, MECHANICS } from './game-config.js';
 
 export class UIController {
     constructor(callbacks) {
@@ -112,7 +113,7 @@ export class UIController {
             
             item.innerHTML = `
                 <img src="${pillar.icon}" class="pillar-icon" title="${localizedName}">
-                <div class="pillar-bar">
+                <span class="pillar-name">${localizedName}</span><span class="pillar-number" id="valeur-${pillarId}">50</span><div class="pillar-bar">
                     <div id="pillar-${pillarId}" class="pillar-fill" style="background: linear-gradient(to top, ${pillar.color}, #ffffff);"></div>
                     <div id="preview-${pillarId}" class="pillar-preview"></div>
                 </div>
@@ -450,6 +451,7 @@ export class UIController {
 
         for (const pillar in gameState.pillars) {
             const val = gameState.pillars[pillar];
+            const nombre=document.getElementById(`valeur-${pillar}`);if(nombre)nombre.textContent=Math.round(val);
             const el = this.elements.pillars[pillar];
             if (el) {
                 // Smooth transition is already in CSS
@@ -832,7 +834,7 @@ export class UIController {
         this.elements.perilAlert.classList.remove('hidden');
     }
 
-    showCardInfo(data, currentPillars) {
+    showCardInfo(data, currentPillars, forecast = null) {
         if (!this.elements.cardInfo) return;
 
         if (!data) {
@@ -931,6 +933,13 @@ export class UIController {
             }
         }
 
+        if(forecast){
+            for(const pillar of PILLARS){
+                const el=this.elements.previews[pillar];if(!el)continue;
+                el.style.height=forecast.pillars[pillar]+'%';el.style.width=forecast.pillars[pillar]+'%';el.style.opacity='.6';
+            }
+            effectsHtml+='<div class="forecast-summary">'+(forecast.isVictory?'✦ Étape réussie':forecast.isGameOver?'⚠ Ce choix termine la partie':forecast.inZone+'/4 piliers dans la zone')+' · +'+forecast.deltaScore+' points</div>';
+        }
         if (this.elements.cardEffects) this.elements.cardEffects.innerHTML = effectsHtml;
         
         this.elements.cardInfo.classList.remove('hidden');
@@ -982,8 +991,8 @@ export class UIController {
                 this.elements.duelResultBanner.classList.remove('hidden');
                 
                 let resultKey = 'draw';
-                if (gameState.score > duelOpponent.score) resultKey = 'victory';
-                else if (gameState.score < duelOpponent.score) resultKey = 'defeat';
+                if (duelOutcome(gameState,duelOpponent)>0) resultKey = 'victory';
+                else if (duelOutcome(gameState,duelOpponent)<0) resultKey = 'defeat';
                 
                 this.elements.duelResultBanner.textContent = this.callbacks.getTranslation(resultKey);
                 this.elements.duelResultBanner.style.color = resultKey === 'victory' ? '#2ecc71' : (resultKey === 'defeat' ? '#e74c3c' : '#f3e5ab');
@@ -1010,7 +1019,7 @@ export class UIController {
         // --- VICTOIRE ---
         // Le jeu n'avait qu'une seule fin. Tenir l'harmonie assez longtemps en
         // ouvre une seconde, et elle doit se distinguer au premier regard.
-        const victoire = !!gameState.isVictory;
+        const victoire = duelOpponent?duelOutcome(gameState,duelOpponent)>0:!!gameState.isVictory;
         const t = (k) => this.callbacks.getTranslation(k);
 
         // --- LE PARCOURS ---
