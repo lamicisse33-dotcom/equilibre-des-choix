@@ -1,4 +1,4 @@
-const VERSION = 'v69';
+const VERSION = 'v70';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -20,6 +20,8 @@ const ASSETS = [
   './strategy-ui.css',
   './home-controller.js',
   './main.js',
+  './immersive-layout.js',
+  './immersive-ui.css',
   './narrative-controller.js',
   './narrative-events.js',
   './persistence-controller.js',
