@@ -64,3 +64,8 @@ html.strategie #update-banner{position:fixed;z-index:600;bottom:12px;left:50%;to
 #strategie .s-analysis:has(>.s-primary){display:flex;flex-direction:column}
 @media(max-width:900px){.s-analysis-content{gap:7px}#strategie .s-analysis>.s-primary{width:100%;margin:0;flex-shrink:0}}
 @media(max-height:650px) and (max-width:900px){.s-analysis-content{gap:5px}.s-choice>img{max-height:32%}.s-analysis .s-description{display:none}}
+/* Le menu défile sans superposer son pied de page aux choix de modes. */
+#strategie.is-home .s-home{flex:1 0 auto}
+.s-status>div:first-child{min-width:0}
+@media(max-width:900px){.s-status h1{white-space:nowrap;text-overflow:ellipsis;overflow:hidden}}
+@media(max-width:360px){.s-brand>span{font-size:14px;letter-spacing:.05em}.s-brand i{font-size:.65em}.s-pillar-title>b{font-size:20px}.s-pillar-title>b>small{font-size:11px}}
