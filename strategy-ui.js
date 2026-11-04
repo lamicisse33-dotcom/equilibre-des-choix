@@ -1,6 +1,6 @@
 import { PILLARS, PILLAR_DEFINITIONS as DEF, PANTHEONS, PARCOURS, MECHANICS } from './game-config.js';
 import { PersistenceController } from './persistence-controller.js?v=68';
-import { MODES, createEngine, restoreEngine, chooseSage, dateDakar, duelOutcome } from './strategy-mode.js?v=68';
+import { MODES, createEngine, restoreEngine, chooseSage, dateDakar, duelOutcome, playSageTurn } from './strategy-mode.js?v=68';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const round=v=>Math.round(v), fmt=v=>Math.floor(v).toLocaleString('fr-FR');
@@ -24,7 +24,7 @@ function start(mode){
   const day=dateDakar(),seed=mode==='daily'?Number(day.replaceAll('-','')):Math.floor(Math.random()*4294967296);
   const options={mode,seed,stage:store.getEtape(),stats:store.getStats(),heritage:store.getHeritage(),character:PANTHEONS.find(p=>p.id===character)};
   const engine=createEngine(options);
-  run={mode,day,seed,engine,hand:engine.generateCards(),redraws:2,recorded:false,feedback:'Choisis une carte. Compare son effet sur les quatre piliers avant de la jouer.',opponent:mode==='duel'?createEngine(options):null,opponentHand:null};
+  run={mode,day,seed,engine,hand:engine.generateCards(),redraws:2,recorded:false,feedback:'Choisis une carte. Compare son effet sur les quatre piliers avant de la jouer.',opponent:mode==='duel'?createEngine(options):null,opponentHand:null,opponentRedraws:2};
   if(run.opponent)run.opponentHand=run.opponent.generateCards();
   home=false;selected=null;dialog=null;persist();startMusic();playSound('deal');render();
 }
@@ -43,7 +43,7 @@ function commit(){
   if(locked||selected===null||!run||run.engine.isGameOver)return;
   const card=run.hand[selected];if(!card)return;locked=true;
   const before={...run.engine.pillars};run.engine.applyCard(card);
-  if(run.opponent&&!run.opponent.isGameOver){const choice=chooseSage(run.opponent,run.opponentHand);run.opponent.applyCard(choice);run.lastOpponent=choice.title;if(!run.opponent.isGameOver)run.opponentHand=run.opponent.generateCards();}
+  if(run.opponent&&!run.opponent.isGameOver){const response=playSageTurn(run.opponent,run.opponentHand,run.opponentRedraws??2);run.opponentHand=response.hand;run.opponentRedraws=response.redrawsLeft;run.lastOpponent=response.card.title;}
   run.lastCard=card.title;run.delta=Object.fromEntries(PILLARS.map(p=>[p,run.engine.pillars[p]-before[p]]));
   run.feedback=run.engine.dernierFilet?'Un filet de sécurité a ramené un pilier à 50. Il est maintenant utilisé.':`${card.title} joué. ${run.engine.pilliersEnZone()} pilier(s) dans la zone d’équilibre.`;
   run.engine.dernierFilet=null;
