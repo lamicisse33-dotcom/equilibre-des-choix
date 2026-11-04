@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GameEngine} from '../game-engine.js';
 import {PersistenceController} from '../persistence-controller.js';
-import {createEngine,restoreEngine,chooseSage,dateDakar,duelOutcome} from '../strategy-mode.js';
+import {createEngine,restoreEngine,chooseSage,dateDakar,duelOutcome,playSageTurn} from '../strategy-mode.js';
 const card=(effects,other={})=>({id:'test',title:'Test',category:'health',effects,...other});
 test('la prévision reproduit tout le tour sans modifier le moteur ni sa graine',()=>{
  const e=createEngine({seed:42,stage:2});e.activeEvents=[{eventId:'e',title:'Test',effectsPerTurn:{money:-3,love:2},remainingTurns:2}];
@@ -51,4 +51,9 @@ test('duel : survivre prime sur les points et une élimination ne devient pas un
  const p={turn:2,isGameOver:true,isVictory:false,score:9000},sage={turn:2,isGameOver:false,isVictory:false,score:200};assert.equal(duelOutcome(p,sage),-1);
  assert.equal(duelOutcome({...p,turn:3},{...sage,isGameOver:true}),1);
  assert.equal(duelOutcome({...p,turn:13,isVictory:true},{...sage,turn:13,isGameOver:true}),1);
+});
+
+test('la Sage dispose de deux renouvellements, conservés dans le budget du tour suivant',()=>{
+ const e=createEngine({mode:'duel',seed:73});const bad=[card({money:-100,health:-100})];const r=playSageTurn(e,bad,2);assert.ok(r.redrawsLeft>=0&&r.redrawsLeft<2);assert.equal(e.turn,1);const r2=playSageTurn(e,r.hand,r.redrawsLeft);assert.ok(r2.redrawsLeft<=r.redrawsLeft);
+ const noBudget=createEngine({mode:'duel',seed:73});playSageTurn(noBudget,bad,0);assert.equal(noBudget.isGameOver,true);
 });
