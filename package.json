@@ -1,1 +1,1 @@
-{"name":"equilibre-des-choix","private":true,"type":"module","scripts":{"test":"node --test tests/strategie.test.js"}}
+{"name":"equilibre-des-choix","private":true,"type":"module","scripts":{"test":"node --test tests/*.test.js"}}
