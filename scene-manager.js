@@ -684,14 +684,21 @@ export class SceneManager {
         if(cc?.cards.length&&this.table){
             const slots=SceneManager.slotsPour(cc.cards.length,this.table);
             cc.cards.forEach((mesh,i)=>{
-                mesh.userData.baseSlot=slots[i].clone();mesh.userData.slot.copy(slots[i]);
-                const lift = mesh === cc.selectedCard ? .75 : mesh.userData.isHovered ? .4 : 0;
-                new TWEEN.Tween(mesh.position).to({x:slots[i].x,y:slots[i].y+lift,z:slots[i].z},280)
-                    .easing(TWEEN.Easing.Cubic.Out).start();
+                mesh.userData.baseSlot=slots[i].clone();
+                mesh.userData.slot.copy(slots[i]);
             });
             if(CardController.estCarrousel(window.innerWidth/window.innerHeight,cc.cards.length))
                 cc.centrerSur(cc.indexActif??CardController.INDEX_DEPART,true);
             else {cc.indexActif=null;cc.onCarteActive?.(null,0);}
+            cc.cards.forEach(mesh=>{
+                const slot=mesh.userData.slot;
+                const special=['legendary','mythic'].includes(mesh.userData.data?.rarity);
+                const lift = mesh === cc.selectedCard ? (special ? .95 : .75) : mesh.userData.isHovered ? .28 : 0;
+                mesh.userData._resizeTween?.stop();
+                mesh.userData._resizeTween=new TWEEN.Tween(mesh.position)
+                    .to({x:slot.x,y:slot.y+lift,z:slot.z},280)
+                    .easing(TWEEN.Easing.Cubic.Out).start();
+            });
         }
         this.applyPlayFraming();
         if(this.vfx&&this.defaultCameraPos){
