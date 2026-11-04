@@ -136,7 +136,7 @@ export class CardController {
             if (!base) return;
             const x = base.x + decalage;
             mesh.userData.slot.x = x;
-            if (mesh.userData.isSelected) return;
+            if (mesh === this.selectedCard) return;
             if (immediat) { mesh.position.x = x; return; }
             new TWEEN.Tween(mesh.position).to({ x }, 380)
                 .easing(TWEEN.Easing.Cubic.Out).start();
@@ -189,6 +189,7 @@ export class CardController {
                 id: data.id,
                 data: data,
                 slot: slot,
+                baseSlot: slot.clone(),
                 baseScale: cardScale,   // resting scale for hover/select math
                 floatPhase: i * 1.7,    // desync idle float per card
                 isHovered: false
