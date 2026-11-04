@@ -5,7 +5,7 @@
 
 import { createEngine } from './strategy-mode.js?v=70';
 import { GameEngine } from './game-engine.js?v=70';
-import { SceneManager } from './scene-manager.js?v=70';
+import { SceneManager } from './scene-manager.js?v=70.1';
 import { UIController } from './ui-controller.js?v=70';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js';
