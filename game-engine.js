@@ -88,6 +88,7 @@ export class GameEngine {
         this.objectifVictoire = SCORE_VICTOIRE;
         this.etapeParcours = this.etapeParcours || 0;
         this.filetUtilise = false;
+        this.refreshCredits = 2;
         this.dernierFilet = null;
         this.currentSeed = 0;
         this.cardSerial = 0;
@@ -154,6 +155,7 @@ export class GameEngine {
         this.objectifVictoire = SCORE_VICTOIRE;
         this.etapeParcours = this.etapeParcours || 0;
         this.filetUtilise = false;
+        this.refreshCredits = 2;
         this.dernierFilet = null;
         this.history = [];
         this.activeEvents = [];
@@ -190,6 +192,7 @@ export class GameEngine {
         this.triggeredAbilities = state.triggeredAbilities || [];
         this.currentSeed = state.seed ?? state.currentSeed ?? 0;
         this.cardSerial = state.cardSerial ?? 0;
+        this.refreshCredits = Math.max(0,Math.min(2,state.refreshCredits ?? 2));
         this.etapeParcours = Math.max(0, Math.min(PARCOURS.length - 1, state.etapeParcours ?? 0));
         this.filetUtilise = !!state.filetUtilise;
         this.reachedHarmony = !!state.reachedHarmony;
