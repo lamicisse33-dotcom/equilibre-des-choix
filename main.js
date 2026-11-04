@@ -3,16 +3,17 @@
  * Orchestrates all modules and handles the game loop.
  */
 
-import { GameEngine } from './game-engine.js';
-import { SceneManager } from './scene-manager.js';
-import { UIController } from './ui-controller.js';
+import { createEngine } from './strategy-mode.js?v=70';
+import { GameEngine } from './game-engine.js?v=70';
+import { SceneManager } from './scene-manager.js?v=70';
+import { UIController } from './ui-controller.js?v=70';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js';
-import { PersistenceController } from './persistence-controller.js';
-import { ConfigController } from './config-controller.js';
+import { PersistenceController } from './persistence-controller.js?v=70';
+import { ConfigController } from './config-controller.js?v=70';
 import { NarrativeController } from './narrative-controller.js';
 import { TransitionController } from './transition-controller.js';
-import { DuelController } from './duel-controller.js';
+import { DuelController } from './duel-controller.js?v=70';
 
 class App {
     constructor() {
@@ -61,9 +62,8 @@ class App {
         
         this.home = new HomeController({
             onPlay: async (isContinue, pantheon = null, meditationMode = false) => {
-                this.duel.isDuelActive = false;
-                this.opponentData = null;
-                this.ui.showDuelUI(false);
+                if(!isContinue||!this.persistence.data.progression?.duelState){this.duel.disconnect();this.opponentData=null;}
+                this.ui.showDuelUI(this.duel.isDuelActive);
                 await this.transition.fade(1, 600);
                 
                 this.audio.playSignature();
@@ -71,6 +71,7 @@ class App {
                 this.audio.startBGM(meditationMode);
                 
                 if (!isContinue) {
+                    this.engine=new GameEngine(this.persistence.getStats(),this.persistence.getHeritage());
                     this.engine.reset(null, pantheon, meditationMode);
                     this.narrative.reset();
                     this.persistence.clearGameProgress();
@@ -99,11 +100,11 @@ class App {
                 this.audio.playSFX('ui-confirm-sfx', 0.2);
                 this.audio.startBGM();
                 
-                this.engine.reset();
+                this.engine=createEngine({mode:'duel'});
                 this.narrative.reset();
                 this.persistence.clearGameProgress();
                 
-                await this.duel.connect();
+                await this.duel.connect(this.engine.currentSeed);
                 this.ui.showDuelUI(true);
                 
                 this.home.startExperience();
@@ -310,6 +311,7 @@ class App {
         if (this.persistence.data.progression) {
             const prog = this.persistence.data.progression;
             this.engine.loadState(prog);
+            if(prog.duelState){this.engine.heritage={upgrades:{}};this.engine.globalStats={unlockedTrophies:['premiere_victoire']};this.duel.restore(prog.duelState);this.ui.showDuelUI(true);}
             if (prog.narrativeState) this.narrative.loadState(prog.narrativeState);
             this.ui.update(this.engine);
             this.ui.updateHistory(this.engine.history);
@@ -454,6 +456,7 @@ class App {
         try {
             this.persistence.saveGameProgress({
                 ...this.engine,
+                duelState:this.duel.isDuelActive?this.duel.getState():null,
                 narrativeState: this.narrative.getState()
             });
         } catch (e) {
@@ -504,7 +507,8 @@ class App {
         this.audio.playSFX('ui-confirm-sfx', 0.2);
         this.audio.stopDefeatAmbient();
         this.audio.fadeBGM(1.0, 1500, this.engine.turn);
-        this.engine.reset(null, this.engine.selectedPantheon, this.engine.isMeditationMode);
+        this.engine.reset(null,this.engine.selectedPantheon,this.engine.isMeditationMode);
+        if(this.duel.isDuelActive)await this.duel.connect(this.engine.currentSeed);
         this.narrative.reset();
         this.persistence.clearGameProgress();
         this.ui.hideGameOver();
@@ -529,11 +533,11 @@ class App {
         // Les statistiques evoluent d'une partie a l'autre : le moteur doit
         // voir les trophees a jour, sinon le filet ne se retire jamais -- ou
         // pire, ne se declenche jamais.
-        this.engine.globalStats = this.persistence.getStats();
+        if(!this.duel.isDuelActive)this.engine.globalStats=this.persistence.getStats();
         // L'etape courante pilote la duree de la partie. Une sauvegarde
         // anterieure au parcours ne contient pas cette valeur : sans ce
         // rappel, la partie tournait indefiniment, sans victoire ni defaite.
-        this.engine.etapeParcours = this.persistence.getEtape();
+        this.engine.etapeParcours = this.duel.isDuelActive?2:this.persistence.getEtape();
         // Partie reprise plus longue que son etape : on la cloture proprement
         // au lieu de la laisser courir sans fin.
         if (!this.engine.isGameOver && !this.engine.isMeditationMode
@@ -548,9 +552,9 @@ class App {
         this.audio.playSFX('card-appear-sfx', 0.15);
         
         // Narrative injection logic
-        this.narrative.checkTriggers(this.engine);
+        if(!this.duel.isDuelActive)this.narrative.checkTriggers(this.engine);
         let cards = this.engine.generateCards(3);
-        cards = this.narrative.injectNarrativeCards(cards);
+        if(!this.duel.isDuelActive)cards = this.narrative.injectNarrativeCards(cards);
         
         this.scene.createCardMeshes(cards);
         // Reperes du carrousel : autant de points que de cartes, le point
@@ -570,10 +574,11 @@ class App {
         }
 
         // Update UI with refresh availability if needed
-        if (this.engine.activeModifiers.refreshAvailable) {
+        if (this.engine.activeModifiers.refreshAvailable || this.engine.refreshCredits>0) {
             this.ui.showRefreshButton(true, () => {
                 this.audio.playSFX('card-fade-sfx', 0.2);
-                this.engine.activeModifiers.refreshAvailable = false;
+                if(this.engine.activeModifiers.refreshAvailable)this.engine.activeModifiers.refreshAvailable=false;
+                else this.engine.refreshCredits--;
                 this.ui.showRefreshButton(false);
                 this.startNewTurn();
             });
@@ -615,6 +620,7 @@ class App {
      * perdre ne coute plus une soiree, mais une etape.
      */
     avancerParcours() {
+        if(this.duel.isDuelActive)return null;
         const PARC = this.parcours || [];
         const etape = this.persistence.getEtape();
         if (!this.engine.isVictory) return { franchie: false, etape };
@@ -757,7 +763,7 @@ class App {
                         this.confirmCard(mesh.userData.data, mesh);
                     } else {
                         this.selectCard(mesh);
-                        this.ui.showCardInfo(mesh.userData.data, this.engine.pillars);
+                        this.ui.showCardInfo(mesh.userData.data, this.engine.pillars, this.engine.previewCard(mesh.userData.data));
                     }
                 }
             }
@@ -783,6 +789,7 @@ class App {
     }
 
     handlePointer(event, type) {
+        if(event.target?.closest?.('#card-info,button,input,select,a,[role="dialog"]'))return;
         if (this.engine.isGameOver || this.isPaused || this.isProcessing) return;
         if (event.pointerType === 'touch' && !event.isPrimary) return;
 
@@ -808,7 +815,7 @@ class App {
                     // selectionnait une carte sans jamais pouvoir lire son
                     // titre, sa description ni ses effets. Le raccourci
                     // clavier le faisait deja, pas le pointeur.
-                    this.ui.showCardInfo(data, this.engine.pillars);
+                    this.ui.showCardInfo(data, this.engine.pillars, this.engine.previewCard(data));
                 }
             } else {
                 if (this.lastHovered !== mesh) {
@@ -816,7 +823,7 @@ class App {
                     this.lastHovered = mesh;
                     this.scene.cardController.setHover(mesh, true);
                     this.audio.playSFX('card-hover-sfx', 0.15);
-                    this.ui.showCardInfo(data, this.engine.pillars);
+                    this.ui.showCardInfo(data, this.engine.pillars, this.engine.previewCard(data));
                 }
                 document.body.style.cursor = 'pointer';
             }
