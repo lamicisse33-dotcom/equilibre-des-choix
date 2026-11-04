@@ -75,6 +75,10 @@ export class PersistenceController {
         if (!gameState || gameState.isGameOver) return;
         const progress = {
             pillars: gameState.pillars,
+            etapeParcours: gameState.etapeParcours,
+            filetUtilise: gameState.filetUtilise,
+            reachedHarmony: gameState.reachedHarmony,
+            cardSerial: gameState.cardSerial,
             score: gameState.score,
             turn: gameState.turn,
             seed: gameState.currentSeed,
