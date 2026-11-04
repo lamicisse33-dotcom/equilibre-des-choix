@@ -1,8 +1,9 @@
 import * as THREE from 'three';
+import { frameCards } from './immersive-layout.js?v=70';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import TWEEN from 'three/addons/libs/tween.module.js';
 import { TableController } from './table-controller.js';
-import { CardController } from './card-controller.js';
+import { CardController } from './card-controller.js?v=70';
 import { VFXController } from './vfx-controller.js';
 
 export class SceneManager {
@@ -180,6 +181,7 @@ export class SceneManager {
         this.loadAssets();
 
         window.addEventListener('resize', () => this.onResize(), { passive: true });
+        window.visualViewport?.addEventListener('resize', () => this.onResize(), { passive:true });
         window.addEventListener('orientationchange', () => {
             setTimeout(() => this.onResize(), 100);
         });
@@ -533,142 +535,19 @@ export class SceneManager {
      */
     applyPlayFraming(nbCartes = this._nbCartes || 3) {
         this._nbCartes = nbCartes;
-        const aspect = window.innerWidth / window.innerHeight;
-        // La rangee doit tenir y compris pendant le rapprochement declenche par
-        // une selection : sans cette reserve, la camera avancait dans un cadre
-        // deja juste et rognait les cartes laterales.
-        const besoin = SceneManager.halfWidthNeeded(aspect, nbCartes)
-                     / SceneManager.APPROCHE_NARRATIVE;
-        const look = VFXController.PLAY_LOOK;
-
-        // La rangee n'est plus au point de vise mais AVANCEE unites devant :
-        // c'est a cette distance-la que la largeur doit tenir.
-        //
-        // Et il ne suffit pas de cadrer la rangee au repos : la carte
-        // selectionnee avance de SELECT_Z vers le joueur et grossit de
-        // SELECT_SCALE. Vue de plus pres, elle occupe bien plus de largeur --
-        // c'est elle qui sortait du cadre par les cotes.
-        let dist = SceneManager.BASE_DIST;
-        let fov = THREE.MathUtils.radToDeg(
-            Math.atan(besoin / ((dist - SceneManager.AVANCEE) * aspect)) * 2);
-        if (fov > SceneManager.MAX_FOV) {
-            fov = SceneManager.MAX_FOV;
-            dist = besoin / (Math.tan(THREE.MathUtils.degToRad(fov / 2)) * aspect)
-                 + SceneManager.AVANCEE;
-        }
-
-        // Telephone couche : l'ecran est tres large mais tres bas. Le plancher
-        // de 45° laissait la rangee n'occuper que 43 % de la largeur visible,
-        // et les cartes retombaient a 91 px. Sur ecran bas on autorise un champ
-        // plus serre. Meme seuil que la regle CSS paysage (max-height: 500px).
-        const ecranBas = window.innerHeight < 500;
-        fov = Math.max(ecranBas ? SceneManager.MIN_FOV_COURT : SceneManager.MIN_FOV, fov);
-
-        // Garde verticale : une carte ne doit jamais depasser 78 % de la
-        // hauteur visible, sinon elle sort du cadre par le haut ou le bas.
-        // La rangee est AVANCEE unites devant le point de vise : c'est a cette
-        // distance-la qu'il faut mesurer sa taille apparente. Mesuree depuis le
-        // point de vise, la carte paraissait plus petite qu'en realite et la
-        // garde ne se declenchait jamais.
-        // La carte est inclinee : son bord bas est bien plus proche de l'oeil
-        // que son bord haut. Un simple rapport hauteur / hauteur visible
-        // sous-estimait donc largement son emprise reelle. On mesure la
-        // projection et on elargit le champ jusqu'a ce qu'elle rentre.
-        const part = ecranBas ? SceneManager.PART_HAUTEUR_COURT : SceneManager.PART_HAUTEUR;
-        for (let i = 0; i < 6; i++) {
-            const emprise = this.empriseRangee(fov, dist);
-            if (emprise === null || emprise <= part) break;
-            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / part);
-            const nouveau = Math.min(SceneManager.MAX_FOV,
-                                     THREE.MathUtils.radToDeg(Math.atan(t) * 2));
-            if (nouveau > fov + 0.01) {
-                fov = nouveau;
-            } else {
-                // Champ deja au maximum : seul un recul peut faire rentrer la
-                // rangee. Sans ce recours, elle debordait par le bas en paysage.
-                const recul = dist * (emprise / part);
-                if (recul <= dist + 0.01) break;
-                dist = recul;
-            }
-        }
-
-        // --- Ajustement mesure, et non plus estime ---
-        // Le calcul analytique divergeait de la projection reelle de Three.js,
-        // et surtout il ignorait que la carte selectionnee avance vers le
-        // joueur : c'est elle qui sortait par les cotes. On projette donc les
-        // points les plus extremes avec la vraie camera, et on elargit le champ
-        // jusqu'a ce qu'ils rentrent.
-        // La correction est symetrique : on elargit si la rangee deborde, mais
-        // on resserre aussi si elle laisse de la marge. Ne corriger que les
-        // debordements laissait jusqu'a 15 % de largeur inutilisee, donc des
-        // cartes plus petites que necessaire.
-        const partHaut = ecranBas ? SceneManager.PART_HAUTEUR_COURT : SceneManager.PART_HAUTEUR;
-        for (let i = 0; i < 12; i++) {
-            const debord = this.debordementLateral(fov, dist, aspect);
-            if (debord === null || debord < 0.05) break;
-            const ecart = debord / SceneManager.BORD_MAX;
-            if (Math.abs(ecart - 1) < 0.006) break;
-
-            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * ecart;
-            let nouveauFov = THREE.MathUtils.radToDeg(Math.atan(t) * 2);
-            nouveauFov = Math.min(SceneManager.MAX_FOV, Math.max(SceneManager.MIN_FOV, nouveauFov));
-
-            if (Math.abs(nouveauFov - fov) > 0.05) {
-                fov = nouveauFov;
-            } else {
-                // Champ deja a la borne : on joue sur la distance.
-                const nouveau = dist * ecart;
-                if (Math.abs(nouveau - dist) < 0.01) break;
-                dist = Math.max(SceneManager.AVANCEE + 1.5, nouveau);
-            }
-
-        }
-
-        // --- Deux passes finales, qui ne peuvent qu'elargir ---
-        // La largeur veut rapprocher la camera, la hauteur veut la reculer :
-        // les deux se combattaient dans la meme boucle et s'arretaient au
-        // hasard. La hauteur passe en dernier et l'emporte.
-        for (let i = 0; i < 6; i++) {
-            const emprise = this.empriseRangee(fov, dist);
-            if (emprise === null || emprise <= partHaut) break;
-            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (emprise / partHaut);
-            const f2 = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(t) * 2));
-            if (f2 > fov + 0.01) { fov = f2; continue; }
-            const recul = dist * (emprise / partHaut);
-            if (recul <= dist + 0.01) break;
-            dist = recul;
-        }
-        for (let i = 0; i < 6; i++) {
-            const debord = this.debordementLateral(fov, dist, aspect);
-            if (debord === null || debord <= SceneManager.BORD_MAX) break;
-            const t = Math.tan(THREE.MathUtils.degToRad(fov / 2)) * (debord / SceneManager.BORD_MAX);
-            const f2 = Math.min(SceneManager.MAX_FOV, THREE.MathUtils.radToDeg(Math.atan(t) * 2));
-            if (f2 > fov + 0.01) { fov = f2; continue; }
-            const recul = dist * (debord / SceneManager.BORD_MAX);
-            if (recul <= dist + 0.01) break;
-            dist = recul;
-        }
-
-        this.camera.fov = fov;
-        this.camera.aspect = aspect;
-        this.camera.updateProjectionMatrix();
-
-        // Meme axe de vise, a la distance calculee. PLAY_POS est lu par spread
-        // au moment des tweens : le muter suffit a recaler intro et resets.
-        // La camera et le point de vise descendent ensemble : le regard se
-        // translate sans changer l'angle, et toute la scene descend a l'ecran.
-        // On cherche la translation qui pose le bas de la rangee sur BAS_CIBLE,
-        // sans jamais faire sortir son haut par le dessus.
-        look.y = SceneManager.BASE_LOOK_Y + this.calculerDescente(fov, dist);
-
-        const ratio = dist / SceneManager.BASE_DIST;
-        const pos = VFXController.PLAY_POS;
-        pos.y = look.y + SceneManager.BASE_OFFSET.y * ratio;
-        pos.z = look.z + SceneManager.BASE_OFFSET.z * ratio;
-
-        if (this.defaultCameraPos) {
-            this.defaultCameraPos.set(pos.x, pos.y, pos.z);
-        }
+        const width=window.innerWidth,height=window.visualViewport?.height||window.innerHeight;
+        const slots=this.table?SceneManager.slotsPour(nbCartes,this.table):[];
+        const carousel=CardController.estCarrousel(width/height,nbCartes);
+        const xs=carousel?[0]:slots.length?slots.map(s=>s.x):[-2.15,0,2.15];
+        const ref=slots[0]||{y:1+CardController.LIFT_Y,z:4.1};
+        const f=frameCards({width,height,xs,slotY:ref.y,slotZ:ref.z,
+            cardWidth:CardController.CARD_W,cardHeight:CardController.CARD_H});
+        this.camera.fov=f.fov;this.camera.aspect=width/height;this.camera.updateProjectionMatrix();
+        const look=VFXController.PLAY_LOOK;look.y=f.lookY;
+        const ratio=f.dist/SceneManager.BASE_DIST,pos=VFXController.PLAY_POS;
+        pos.y=look.y+SceneManager.BASE_OFFSET.y*ratio;pos.z=look.z+SceneManager.BASE_OFFSET.z*ratio;
+        if(this.defaultCameraPos)this.defaultCameraPos.set(pos.x,pos.y,pos.z);
+        this.framingBounds=f.bounds;
     }
 
     /**
@@ -800,8 +679,26 @@ export class SceneManager {
     }
 
     onResize() {
-        this.renderer.setSize(window.innerWidth, window.innerHeight);
+        this.renderer.setSize(window.innerWidth,window.visualViewport?.height||window.innerHeight);
+        const cc=this.cardController;
+        if(cc?.cards.length&&this.table){
+            const slots=SceneManager.slotsPour(cc.cards.length,this.table);
+            cc.cards.forEach((mesh,i)=>{
+                mesh.userData.baseSlot=slots[i].clone();mesh.userData.slot.copy(slots[i]);
+                const lift = mesh === cc.selectedCard ? .75 : mesh.userData.isHovered ? .4 : 0;
+                new TWEEN.Tween(mesh.position).to({x:slots[i].x,y:slots[i].y+lift,z:slots[i].z},280)
+                    .easing(TWEEN.Easing.Cubic.Out).start();
+            });
+            if(CardController.estCarrousel(window.innerWidth/window.innerHeight,cc.cards.length))
+                cc.centrerSur(cc.indexActif??CardController.INDEX_DEPART,true);
+            else {cc.indexActif=null;cc.onCarteActive?.(null,0);}
+        }
         this.applyPlayFraming();
+        if(this.vfx&&this.defaultCameraPos){
+            this.camera.position.copy(this.defaultCameraPos);
+            const look = VFXController.PLAY_LOOK;
+            this.camera.lookAt(look.x, look.y, look.z);
+        }
     }
 
     setLightMode(enabled) {
