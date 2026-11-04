@@ -2,7 +2,7 @@ import {test} from 'node:test';
 import assert from 'node:assert/strict';
 import {GameEngine} from '../game-engine.js';
 import {PersistenceController} from '../persistence-controller.js';
-import {createEngine,restoreEngine,chooseSage,dateDakar} from '../strategy-mode.js';
+import {createEngine,restoreEngine,chooseSage,dateDakar,duelOutcome} from '../strategy-mode.js';
 const card=(effects,other={})=>({id:'test',title:'Test',category:'health',effects,...other});
 test('la prévision reproduit tout le tour sans modifier le moteur ni sa graine',()=>{
  const e=createEngine({seed:42,stage:2});e.activeEvents=[{eventId:'e',title:'Test',effectsPerTurn:{money:-3,love:2},remainingTurns:2}];
@@ -45,4 +45,10 @@ test('200 parcours simulés : effets et prévisions restent cohérents jusqu’�
  }
  assert.ok(victories>0,`aucune victoire sur 200 graines`);
  console.log(`Sage : ${victories}/200 défis gagnés`);
+});
+
+test('duel : survivre prime sur les points et une élimination ne devient pas une victoire',()=>{
+ const p={turn:2,isGameOver:true,isVictory:false,score:9000},sage={turn:2,isGameOver:false,isVictory:false,score:200};assert.equal(duelOutcome(p,sage),-1);
+ assert.equal(duelOutcome({...p,turn:3},{...sage,isGameOver:true}),1);
+ assert.equal(duelOutcome({...p,turn:13,isVictory:true},{...sage,turn:13,isGameOver:true}),1);
 });
