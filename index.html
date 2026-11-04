@@ -1988,7 +1988,13 @@
         })();
     </script>
 
-    <script type="module" src="main.js"></script>
+    <script type="module">
+        if (new URLSearchParams(location.search).get('vue') === 'immersive') {
+            import('./main.js');
+        } else {
+            import('./strategy-ui.js?v=68');
+        }
+    </script>
 
     <!-- sw.js existait dans le projet mais n'etait enregistre nulle part :
          le mode hors ligne n'a jamais ete actif. -->
