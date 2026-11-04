@@ -1433,7 +1433,9 @@
             from { opacity: 0; }
             to { opacity: 1; }
         }
-    </style>
+    
+</style>
+<link rel="stylesheet" href="immersive-ui.css?v=70">
     <script type="importmap">
         {
             "imports": {
@@ -1989,8 +1991,8 @@
     </script>
 
     <script type="module">
-        if (new URLSearchParams(location.search).get('vue') === 'immersive') {
-            import('./main.js');
+        if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
+            import('./main.js?v=70');
         } else {
             import('./strategy-ui.js?v=69');
         }
