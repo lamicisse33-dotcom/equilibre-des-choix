@@ -1,4 +1,4 @@
-import { GameEngine } from './game-engine.js?v=69';
+import { GameEngine } from './game-engine.js?v=70';
 import { PILLARS, PARCOURS } from './game-config.js';
 
 export const MODES = {
