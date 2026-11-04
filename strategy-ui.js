@@ -1,6 +1,6 @@
 import { PILLARS, PILLAR_DEFINITIONS as DEF, PANTHEONS, PARCOURS, MECHANICS } from './game-config.js';
-import { PersistenceController } from './persistence-controller.js';
-import { MODES, createEngine, restoreEngine, chooseSage, dateDakar, duelOutcome } from './strategy-mode.js';
+import { PersistenceController } from './persistence-controller.js?v=68';
+import { MODES, createEngine, restoreEngine, chooseSage, dateDakar, duelOutcome } from './strategy-mode.js?v=68';
 
 const esc=v=>String(v??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const round=v=>Math.round(v), fmt=v=>Math.floor(v).toLocaleString('fr-FR');
@@ -8,7 +8,7 @@ const store=new PersistenceController(), KEY='equilibre_strategie_v1', RESULTS='
 const root=document.createElement('main');root.id='strategie';
 document.documentElement.classList.add('strategie');
 document.body.replaceChildren(root);
-const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./strategy-ui.css';document.head.append(sheet);
+const sheet=document.createElement('link');sheet.rel='stylesheet';sheet.href='./strategy-ui.css?v=68';document.head.append(sheet);
 const banner=document.createElement('div');banner.id='update-banner';banner.innerHTML='<span>Une mise à jour est prête.</span><button id="update-apply">Mettre à jour</button><button id="update-later">Plus tard</button>';document.body.append(banner);
 let run=null,selected=null,dialog=null,home=true,locked=false,character='balanced',notice='';
 let saved=read(KEY),music=null,sound=read('equilibre_strategie_son')!==false,voice=false;
