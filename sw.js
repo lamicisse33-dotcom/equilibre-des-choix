@@ -1,4 +1,4 @@
-const VERSION = 'v67';
+const VERSION = 'v68';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -15,6 +15,9 @@ const ASSETS = [
   './duel-controller.js',
   './game-config.js',
   './game-engine.js',
+  './strategy-mode.js',
+  './strategy-ui.js',
+  './strategy-ui.css',
   './home-controller.js',
   './main.js',
   './narrative-controller.js',
@@ -138,7 +141,8 @@ self.addEventListener('fetch', (event) => {
 
   event.respondWith((async () => {
     const cached = await caches.match(req);
-    if (cached) return cached;
+    const frais = url.origin === location.origin && (req.mode === 'navigate' || /\.(?:js|css)$/.test(url.pathname));
+    if (cached && !frais) return cached;
     try {
       const res = await fetch(req);
       // Ne jamais archiver une reponse opaque : son statut est inconnu, et un
@@ -149,6 +153,7 @@ self.addEventListener('fetch', (event) => {
       }
       return res;
     } catch (e) {
+      if (cached) return cached;
       if (req.mode === 'navigate') {
         const fallback = await caches.match('./index.html');
         if (fallback) return fallback;
