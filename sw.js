@@ -1,4 +1,4 @@
-const VERSION = 'v82-destin';
+const VERSION = 'v83-visuels';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -6,6 +6,9 @@ const CACHE_NAME = `equilibre-${VERSION}`;
 const CDN = ['unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'esm.sh'];
 
 const ASSETS = [
+  './visuels-contextuels.js?v=83',
+  './card-controller.js?v=83',
+  './scene-manager.js?v=83',
   './',
   './index.html',
   './decouverte.html',
@@ -22,7 +25,7 @@ const ASSETS = [
   './duel-controller.js',
   './game-config.js',
   './game-engine.js',
-  './game-engine.js?v=82',
+  './game-engine.js?v=83',
   './strategy-mode.js',
   './strategy-ui.js',
   './strategy-ui.css',
@@ -38,7 +41,7 @@ const ASSETS = [
   './transition-controller.js',
   './ui-controller.js',
   './ui-controller.js?v=80',
-  './main.js?v=82',
+  './main.js?v=83',
   './vfx-controller.js',
   './assets/card-back-texture-v2.webp',
   './assets/card-back-texture.webp',

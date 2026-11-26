@@ -1,3 +1,4 @@
+import { dessinerVisuel } from './visuels-contextuels.js?v=83';
 import * as THREE from 'three';
 import TWEEN from 'three/addons/libs/tween.module.js';
 import { RARITY_DEFINITIONS, PILLAR_DEFINITIONS, PILLARS } from './game-config.js';
@@ -393,8 +394,9 @@ export class CardController {
         const portrait = this.textures.portraits?.[data.portraitKey];
         const estPortrait = !!portrait?.image?.width;
         if (estPortrait) artTexture = portrait;
-        if (artTexture && artTexture.image) {
-            const img = artTexture.image;
+        const visuel = dessinerVisuel(data.visuelContextuel,cardColor);
+        if (visuel || (artTexture && artTexture.image)) {
+            const img = visuel || artTexture.image;
             const ratio = img.width / img.height;
             const frameRatio = artW / artH;
             // Ajustement par remplissage et non par insertion. En insertion,
@@ -407,7 +409,7 @@ export class CardController {
             const dx = artX + (artW - dw) / 2;
             // Cadrage sur le haut de l'image plutot que sur son centre : les
             // sujets de ces illustrations sont hauts (arbre, lotus, silhouette).
-            const dy = artY + (artH - dh) * (estPortrait ? 0.12 : 0.35);
+            const dy = artY + (artH - dh) * (estPortrait && !visuel ? 0.12 : 0.35);
             ctx.save();
             ctx.globalAlpha = 0.88;
             ctx.filter = estPortrait ? 'saturate(0.48)' : 'saturate(0.72)';

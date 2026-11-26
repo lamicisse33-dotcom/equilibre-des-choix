@@ -1,12 +1,13 @@
+import { dessinerVisuel, visuelEcho } from './visuels-contextuels.js?v=83';
 /**
  * ÉQUILIBRE - Main Application Controller (Mediator)
  * Orchestrates all modules and handles the game loop.
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=82';
+import { GameEngine } from './game-engine.js?v=83';
 import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=82';
-import { SceneManager } from './scene-manager.js?v=80';
+import { SceneManager } from './scene-manager.js?v=83';
 import { UIController } from './ui-controller.js?v=80';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js?v=72';
@@ -891,6 +892,7 @@ class App {
         this.ui.arreterLecture();
         dialog.querySelector('[data-echo-origine]').textContent='Une décision du tour '+echo.origine+' vous rattrape…';
         dialog.querySelector('[data-echo-titre]').textContent=echo.titre;
+        const image=dialog.querySelector('[data-echo-image]');const art=dessinerVisuel(visuelEcho(echo),'#bda875');if(image){image.replaceChildren();if(art)image.append(art);image.hidden=!art;}
         dialog.querySelector('[data-echo-texte]').textContent=echo.texte;
         dialog.querySelector('[data-echo-note]').textContent=echo.note;
         const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
