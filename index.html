@@ -1991,8 +1991,7 @@
     </script>
 
     <script type="module">
-        if (!new URLSearchParams(location.search).has('vue')) { location.replace('./decouverte.html'); }
-        else if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
+        if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
             import('./main.js?v=70.1');
         } else {
             import('./strategy-ui.js?v=69');
