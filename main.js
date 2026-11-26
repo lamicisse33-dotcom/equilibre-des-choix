@@ -8,7 +8,7 @@ import { createEngine } from './strategy-mode.js?v=70';
 import { GameEngine } from './game-engine.js?v=83';
 import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=82';
 import { SceneManager } from './scene-manager.js?v=83';
-import { UIController } from './ui-controller.js?v=80';
+import { UIController } from './ui-controller.js?v=84';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js?v=72';
 import { PersistenceController } from './persistence-controller.js?v=70';
@@ -184,7 +184,7 @@ class App {
             onPauseStateChange: (isPaused) => {
                 this.isPaused = isPaused;
                 // Le jeu se met en pause : la voix ne doit pas continuer seule.
-                if (isPaused) this.ui.arreterLecture?.();
+                if (isPaused) {clearTimeout(this._lectureSituationTimer);this.ui.arreterLecture?.();}
                 this.audio.playSFX('ui-click-sfx', 0.1);
                 if (isPaused) {
                     this.audio.fadeBGM(0.3, 500);
@@ -488,6 +488,7 @@ class App {
         document.addEventListener('visibilitychange', () => {
             if (document.visibilityState !== 'hidden') return;
             // La synthese vocale continue de parler en arriere-plan.
+            clearTimeout(this._lectureSituationTimer);
             this.ui.arreterLecture?.();
             enregistrer();
         });
@@ -568,6 +569,7 @@ class App {
             clearTimeout(this._lectureSituationTimer);
             situation.hidden=!s;
             if(s){
+                this.ui.preparerLectureSituation();
                 document.getElementById('situation-numero').textContent='· '+(this.engine.turn+1)+' / 10';
                 document.getElementById('situation-titre').textContent=s[1];
                 document.getElementById('situation-texte').textContent=s[2];
@@ -575,7 +577,7 @@ class App {
                 this.audio.playSFX('card-appear-sfx',0.22);
                 const lire=()=>{clearTimeout(this._lectureSituationTimer);this.ui.lireSituation(s[1],s[2]);};
                 document.getElementById('situation-lecture').onclick=lire;
-                this._lectureSituationTimer=setTimeout(()=>{if(!this.isPaused&&!document.hidden&&!situation.hidden&&!this.selectedCard&&!this.lastHovered)lire();},850);
+                this._lectureSituationTimer=setTimeout(()=>{if(!this.isPaused&&!document.hidden&&!situation.hidden)lire();else this.ui.arreterLecture();},850);
             }
         }
         
@@ -848,7 +850,7 @@ class App {
                     if (this.lastHovered) this.scene.cardController.setHover(this.lastHovered, false);
                     this.lastHovered = mesh;
                     this.scene.cardController.setHover(mesh, true);
-                    this.audio.playSFX('card-hover-sfx', 0.15);
+                    if(!this.ui.prioriteSituation)this.audio.playSFX('card-hover-sfx', 0.15);
                     this.ui.showCardInfo(data, this.engine.pillars, this.engine.previewCard(data));
                 }
                 document.body.style.cursor = 'pointer';
@@ -905,6 +907,7 @@ class App {
     confirmCard(data, mesh) {
         if (this.isProcessing) return;
         clearTimeout(this._lectureSituationTimer);
+        this.ui.arreterLecture();
         this.isProcessing = true;
 
         this.engine.applyCard(data);

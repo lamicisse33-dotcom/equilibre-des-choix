@@ -514,12 +514,28 @@ export class UIController {
         }
     }
 
+    preparerLectureSituation() {
+        this.arreterLecture();
+        this.carteAffichee=null;
+        this.derniereCarteLue=null;
+        this.prioriteSituation=this.lectureActivee!==false && (this.volumeVoix??0.5)>0 && 'speechSynthesis' in window;
+    }
+
+    finirLectureNaturelle(u) {
+        if(this.utteranceEnCours!==u)return;
+        const carte=u._situation?this.carteAffichee:null;
+        this.arreterLecture();
+        if(carte){this.derniereCarteLue=carte.id;this.lectureCoupee=false;this.lireCarte(carte);}
+    }
+
     lireSituation(titre,texte) {
         this.lectureCoupee=false;
+        this.prioriteSituation=this.lectureActivee!==false && (this.volumeVoix??0.5)>0 && 'speechSynthesis' in window;
         this.lireCarte({title:titre,desc:texte,effects:{},situation:true});
     }
 
     lireCarte(data) {
+        if(!data?.situation && this.prioriteSituation)return;
         // Etat propre : le bouton ne reapparait qu'une fois la voix partie,
         // ou si le navigateur refuse la lecture automatique.
         this.montrerBouton('aucun');
@@ -568,7 +584,7 @@ export class UIController {
             // autre source audio joue. On efface la musique pendant l'enonce.
             this.callbacks.onLectureDebut?.();
         };
-        u.onend = () => { if (this.utteranceEnCours === u) this.arreterLecture(); };
+        u.onend = () => this.finirLectureNaturelle(u);
         u.onerror = () => { if (this.utteranceEnCours === u) this.arreterLecture(); };
 
         this.utteranceEnCours = u;
@@ -596,6 +612,7 @@ export class UIController {
                     if (this.utteranceEnCours === u && !synth.speaking && !synth.pending) {
                         // Le navigateur refuse la lecture automatique : on
                         // propose au joueur de la declencher lui-meme.
+                        if(u._situation)this.arreterLecture();
                         this.montrerBouton('lire');
                     }
                 }, 800);
@@ -647,10 +664,11 @@ export class UIController {
     }
 
     arreterLecture() {
+        this.prioriteSituation=false;
         if (!('speechSynthesis' in window)) return;
         clearTimeout(this._relanceVoix);
-        window.speechSynthesis.cancel();
         this.utteranceEnCours = null;
+        window.speechSynthesis.cancel();
         this.montrerArret(false);
         this.callbacks.onLectureFin?.();
     }
@@ -678,7 +696,8 @@ export class UIController {
 
     masquerDetail() {
         setTimeout(() => this.rendreReperes(), 60);
-        if(!this.utteranceEnCours?._situation)this.arreterLecture();
+        this.carteAffichee=null;
+        if(!this.prioriteSituation&&!this.utteranceEnCours?._situation)this.arreterLecture();
         this.derniereCarteLue = null;
         this.elements.cardInfo?.classList.add('hidden');
         if (this.elements.cardInfo) this.elements.cardInfo.style.opacity = '0';
@@ -955,6 +974,7 @@ export class UIController {
         // Lecture automatique. Relancee a chaque nouvelle carte presentee ;
         // une carte deja lue n'est pas repetee tant qu'on reste dessus.
         this.carteAffichee = data;
+        if(this.prioriteSituation)return;
         if (this.derniereCarteLue !== data.id) {
             this.derniereCarteLue = data.id;
             this.lectureCoupee = false;   // une nouvelle carte relance la voix
