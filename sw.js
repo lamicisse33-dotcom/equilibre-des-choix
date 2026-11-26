@@ -1,4 +1,4 @@
-const VERSION = 'v70.1';
+const VERSION = 'v71-decouverte';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -8,6 +8,8 @@ const CDN = ['unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts
 const ASSETS = [
   './',
   './index.html',
+  './decouverte.html',
+  './choix-simples.js?v=1',
   './manifest.json',
   './audio-controller.js',
   './card-controller.js',
