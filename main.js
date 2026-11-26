@@ -4,8 +4,8 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=81';
-import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=81';
+import { GameEngine } from './game-engine.js?v=82';
+import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=82';
 import { SceneManager } from './scene-manager.js?v=80';
 import { UIController } from './ui-controller.js?v=80';
 import { AudioController } from './audio-controller.js';
@@ -896,7 +896,7 @@ class App {
         const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
         ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const row=document.createElement('div');row.textContent=name+' : '+(echo.delta[i]>0?'+':'')+echo.delta[i];rows.append(row);});
         dialog.addEventListener('close',()=>{this.isProcessing=false;this.startNewTurn();},{once:true});
-        this.audio.playSFX(echo.delta.some(v=>v<0)?'game-over-sfx':'harmony-sfx',0.25);
+        this.audio.playSFX(echo.nature==='positive'?'harmony-sfx':'game-over-sfx',0.25);
         dialog.showModal();
     }
 
