@@ -1,3 +1,4 @@
+import {initialiserSource,sourceVisible,enregistrerSource,celebrerSource} from './source-harmonie.js?v=85';
 import { dessinerVisuel, visuelEcho } from './visuels-contextuels.js?v=83';
 /**
  * ÉQUILIBRE - Main Application Controller (Mediator)
@@ -564,6 +565,7 @@ class App {
         const situation=document.getElementById('situation-simple');
         const s=this.engine.situationSimple();
         document.body.classList.toggle('choix-simples',!!s);
+        sourceVisible(!!s);
         this.scene.choixSimples=!!s;
         if(situation){
             clearTimeout(this._lectureSituationTimer);
@@ -664,6 +666,7 @@ class App {
     }
 
     async handleGameOver() {
+        sourceVisible(false);
         // Toute partie terminee entre au classement. Sans cet appel, l'ecran
         // restait vide quel que soit le nombre de parties.
         // Avancement du parcours avant toute chose : l'ecran de fin doit
@@ -776,7 +779,7 @@ class App {
     setupKeyboardEvents() {
         window.addEventListener('keydown', (e) => {
             if (this.engine.isGameOver || this.isPaused || this.isProcessing) {
-                if (this.engine.isGameOver && (e.code === 'Space' || e.code === 'Enter')) this.restartGame();
+                if (!this.isProcessing && this.engine.isGameOver && (e.code === 'Space' || e.code === 'Enter')) this.restartGame();
                 return;
             }
 
@@ -885,11 +888,16 @@ class App {
         this.audio.playSFX('card-flip-sfx', 0.25);
     }
 
+    continuerApresSource() {
+        const rewards=this._sourceRewards||[];this._sourceRewards=[];
+        celebrerSource(rewards,()=>{this.isProcessing=false;this.startNewTurn();},()=>this.audio.playSFX('harmony-sfx',0.35));
+    }
+
     terminerDecision() {
         const h=this.engine.choixSimples?.history.at(-1);
         const echo=h?.echo;
         const dialog=document.getElementById('echo-destin');
-        if(!echo||!dialog||!dialog.showModal){this.isProcessing=false;this.startNewTurn();return;}
+        if(!echo||!dialog||!dialog.showModal){this.continuerApresSource();return;}
         document.getElementById('retour-decision').hidden=true;
         this.ui.arreterLecture();
         dialog.querySelector('[data-echo-origine]').textContent='Une décision du tour '+echo.origine+' vous rattrape…';
@@ -899,7 +907,7 @@ class App {
         dialog.querySelector('[data-echo-note]').textContent=echo.note;
         const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
         ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const row=document.createElement('div');row.textContent=name+' : '+(echo.delta[i]>0?'+':'')+echo.delta[i];rows.append(row);});
-        dialog.addEventListener('close',()=>{this.isProcessing=false;this.startNewTurn();},{once:true});
+        dialog.addEventListener('close',()=>this.continuerApresSource(),{once:true});
         this.audio.playSFX(echo.nature==='positive'?'harmony-sfx':'game-over-sfx',0.25);
         dialog.showModal();
     }
@@ -911,6 +919,7 @@ class App {
         this.isProcessing = true;
 
         this.engine.applyCard(data);
+        this._sourceRewards=this.engine.choixSimples?enregistrerSource(this.engine.choixSimples):[];
         if(this.engine.choixSimples){const h=this.engine.choixSimples.history.at(-1);if(h){const e=document.getElementById('retour-decision');e.textContent=explicationChoix(h.situation,h.choice);e.hidden=false;clearTimeout(this._retourDecisionTimer);this._retourDecisionTimer=setTimeout(()=>{e.hidden=true;},6500);}}
         if(!this.engine.choixSimples)this.narrative.onCardPlayed(data);
         this.scene.resetCamera();
@@ -961,6 +970,7 @@ class App {
     }
 }
 
+initialiserSource();
 new App();
 
 const nomsParcours=['Spiritualité','Amour','Santé','Argent'];

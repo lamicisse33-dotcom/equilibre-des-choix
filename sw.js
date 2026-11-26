@@ -1,4 +1,4 @@
-const VERSION = 'v84-voix-prioritaire';
+const VERSION = 'v85-source-harmonie';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -6,6 +6,8 @@ const CACHE_NAME = `equilibre-${VERSION}`;
 const CDN = ['unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'esm.sh'];
 
 const ASSETS = [
+  './source-harmonie.js?v=85',
+  './source-harmonie.css?v=85',
   './visuels-contextuels.js?v=83',
   './card-controller.js?v=83',
   './scene-manager.js?v=83',
@@ -41,7 +43,7 @@ const ASSETS = [
   './transition-controller.js',
   './ui-controller.js',
   './ui-controller.js?v=84',
-  './main.js?v=84',
+  './main.js?v=85',
   './vfx-controller.js',
   './assets/card-back-texture-v2.webp',
   './assets/card-back-texture.webp',
