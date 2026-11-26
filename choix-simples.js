@@ -13,6 +13,44 @@ export function newJourneyGame(random=Math.random){const d=readJourney();let see
 
 export function newGame(random=Math.random){const order=SITUATIONS.map((_,i)=>i);for(let i=order.length-1;i>0;i--){const j=Math.floor(random()*(i+1));[order[i],order[j]]=[order[j],order[i]];}return {version:1,order:order.slice(0,LENGTH),values:[50,50,50,50],history:[],pending:false};}
 export function valid(g){return !!g&&g.version===1&&Array.isArray(g.order)&&g.order.length===LENGTH&&new Set(g.order).size===LENGTH&&g.order.every(i=>Number.isInteger(i)&&i>=0&&i<SITUATIONS.length)&&Array.isArray(g.values)&&g.values.length===4&&g.values.every(v=>Number.isInteger(v)&&v>=0&&v<=100)&&Array.isArray(g.history)&&g.history.length<=LENGTH&&g.history.every((h,i)=>h&&h.situation===g.order[i]&&Number.isInteger(h.choice)&&h.choice>=0&&h.choice<3&&Array.isArray(h.delta)&&h.delta.length===4&&h.delta.every(Number.isFinite))&&typeof g.pending==='boolean'&&(!g.pending||g.history.length>0);}
-export function decide(g,choice){if(!valid(g)||g.pending||g.history.length>=LENGTH||!Number.isInteger(choice)||choice<0||choice>2)return g;const situation=g.order[g.history.length],effects=SITUATIONS[situation][3][choice][2];const values=g.values.map((v,i)=>Math.max(0,Math.min(100,v+effects[i])));return {...g,values,history:[...g.history,{situation,choice,delta:values.map((v,i)=>v-g.values[i])}],pending:true};}
+
+export const HARMONY_MIN=35, HARMONY_MAX=65;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const outside=v=>Math.max(0,HARMONY_MIN-v,v-HARMONY_MAX);
+// Jugement contextuel des 40 situations : 2 responsable, 1 nuancé, 0 risqué.
+const QUALITES=[
+[0,2,2],[1,1,2],[0,2,2],[0,2,2],
+[1,1,2],[0,1,2],[2,2,1],[0,2,2],
+[1,1,2],[2,0,2],[1,1,2],[2,0,2],
+[1,1,2],[1,1,2],[1,0,2],[0,2,2],
+[2,0,2],[2,0,2],[1,1,1],[2,0,2],
+[2,0,2],[2,0,2],[2,0,2],[2,0,2],
+[0,2,2],[0,2,2],[2,0,2],[0,2,1],
+[2,0,2],[2,0,2],[2,0,2],[2,0,2],
+[0,2,0],[2,0,2],[0,2,2],[2,0,2],
+[2,0,2],[2,0,2],[2,0,2],[2,0,2]
+];
+export function qualiteChoix(situation,choix){return QUALITES[situation]?.[choix]??1;}
+export function valeursApres(values,situation,choix){
+ const effects=SITUATIONS[situation][3][choix][2], q=qualiteChoix(situation,choix);
+ return values.map((v,i)=>{
+   let direct=clamp(v+effects[i],0,100);
+   if(q===0)return direct;
+   // Les choix nuancés ont un petit effet transversal, sans garantie.
+   if(q===1)return Math.round(direct+(clamp(direct,35,65)-direct)*0.20);
+   // Une décision responsable conserve ses conséquences dans la zone,
+   // mais ne fragilise aucun pilier au-delà de son déséquilibre initial.
+   const d=outside(v);
+   direct=clamp(direct,35-d,65+d);
+   // Aide indirecte sur chaque pilier déjà fragile, même sans effet direct.
+   if(d>0){
+     const cible=clamp(direct,35,65);
+     const retour=Math.min(outside(direct),Math.max(2,Math.ceil(d*0.40)));
+     direct+=Math.sign(cible-direct)*retour;
+   }
+   return Math.round(clamp(direct,0,100));
+ });
+}
+export function decide(g,choice){if(!valid(g)||g.pending||g.history.length>=LENGTH||!Number.isInteger(choice)||choice<0||choice>2)return g;const situation=g.order[g.history.length],effects=SITUATIONS[situation][3][choice][2];const values=valeursApres(g.values,situation,choice);return {...g,values,history:[...g.history,{situation,choice,delta:values.map((v,i)=>v-g.values[i])}],pending:true};}
 export function next(g){return valid(g)&&g.pending?{...g,pending:false}:g;}
-export function bilan(g){const distance=g.values.reduce((a,v)=>a+Math.abs(v-50),0);const score=Math.max(0,Math.round(100-distance/2));const zone=g.values.filter(v=>v>=35&&v<=65).length;return {score,zone,title:zone===4?'Un bel équilibre':zone>=2?'Un équilibre à renforcer':'Un nouvel équilibre à trouver'};}
+export function bilan(g){const distance=g.values.reduce((a,v)=>a+outside(v),0);const score=Math.max(0,Math.round(100-distance*100/140));const zone=g.values.filter(v=>v>=35&&v<=65).length;return {score,zone,title:zone===4?'Un bel équilibre':zone>=2?'Un équilibre à renforcer':'Un nouvel équilibre à trouver'};}

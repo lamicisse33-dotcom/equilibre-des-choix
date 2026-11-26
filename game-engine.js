@@ -25,7 +25,7 @@ import {
     MECHANICS
 } from './game-config.js';
 
-import { SITUATIONS, newJourneyGame, decide, next, bilan } from './choix-simples.js?v=74';
+import { SITUATIONS, newJourneyGame, decide, next, bilan, valeursApres } from './choix-simples.js?v=78';
 import { portraitPour } from './personnages.js?v=76';
 export class GameEngine {
     activerChoixSimples() {
@@ -261,7 +261,7 @@ export class GameEngine {
             return s[3].map((c,i) => {
                 const category=PILLARS[c[2].indexOf(Math.max(...c[2]))];
                 const d=PILLAR_DEFINITIONS[category];
-                return {id:'decision-'+this.turn+'-'+i,title:c[0],desc:c[1],category,rarity:'common',color:d.color,icon:d.icon,art:d.art,portraitKey:portraitPour(this.choixSimples.order[this.turn],i),animation:'default',effects:Object.fromEntries(PILLARS.map((p,j)=>[p,c[2][j]])),simpleChoice:i};
+                return {id:'decision-'+this.turn+'-'+i,title:c[0],desc:c[1],category,rarity:'common',color:d.color,icon:d.icon,art:d.art,portraitKey:portraitPour(this.choixSimples.order[this.turn],i),animation:'default',effects:Object.fromEntries(PILLARS.map((p,j)=>[p,valeursApres(this.choixSimples.values,this.choixSimples.order[this.turn],i)[j]-this.choixSimples.values[j]])),simpleChoice:i};
             });
         }
         // Use count or modified count

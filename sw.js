@@ -1,4 +1,4 @@
-const VERSION = 'v77-bilan';
+const VERSION = 'v78-harmonie';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -9,8 +9,7 @@ const ASSETS = [
   './',
   './index.html',
   './decouverte.html',
-  './choix-simples.js?v=1',
-  './choix-simples.js?v=74',
+  './choix-simples.js?v=78',
   './personnages.js?v=76',
   './assets/personnages/famille.webp',
   './assets/personnages/mere.webp',
@@ -23,6 +22,7 @@ const ASSETS = [
   './duel-controller.js',
   './game-config.js',
   './game-engine.js',
+  './game-engine.js?v=78',
   './strategy-mode.js',
   './strategy-ui.js',
   './strategy-ui.css',
@@ -38,7 +38,7 @@ const ASSETS = [
   './transition-controller.js',
   './ui-controller.js',
   './ui-controller.js?v=77',
-  './main.js?v=77',
+  './main.js?v=78',
   './vfx-controller.js',
   './assets/card-back-texture-v2.webp',
   './assets/card-back-texture.webp',
