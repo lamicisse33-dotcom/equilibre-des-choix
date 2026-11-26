@@ -26,7 +26,7 @@ import {
 } from './game-config.js';
 
 import { SITUATIONS, newJourneyGame, decide, next, bilan } from './choix-simples.js?v=74';
-import { portraitPour } from './personnages.js?v=75';
+import { portraitPour } from './personnages.js?v=76';
 export class GameEngine {
     activerChoixSimples() {
         this.choixSimples = newJourneyGame(() => this.seededRandom());

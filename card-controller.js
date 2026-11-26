@@ -364,7 +364,7 @@ export class CardController {
         ctx.letterSpacing = '0px';
 
         // --- 3. ILLUSTRATION (framed window) ---
-        const artX = 52, artY = 136, artW = 408, artH = 244;
+        const artX = 76, artY = 150, artW = 360, artH = 214;
         ctx.save();
         this.roundRectPath(ctx, artX, artY, artW, artH, 12);
         ctx.fillStyle = '#070707';
@@ -408,10 +408,17 @@ export class CardController {
             // Cadrage sur le haut de l'image plutot que sur son centre : les
             // sujets de ces illustrations sont hauts (arbre, lotus, silhouette).
             const dy = artY + (artH - dh) * (estPortrait ? 0.12 : 0.35);
-            ctx.globalAlpha = 0.96;
+            ctx.save();
+            ctx.globalAlpha = 0.88;
+            ctx.filter = estPortrait ? 'saturate(0.48)' : 'saturate(0.72)';
             ctx.drawImage(img, dx, dy, dw, dh);
-            ctx.globalAlpha = 1;
-            if (estPortrait) { ctx.save(); ctx.globalAlpha=.07;ctx.fillStyle=cardColor;ctx.fillRect(artX,artY,artW,artH);ctx.restore(); }
+            ctx.restore();
+            ctx.save();
+            ctx.globalCompositeOperation = 'color';
+            ctx.globalAlpha = estPortrait ? 0.48 : 0.28;
+            ctx.fillStyle = cardColor;
+            ctx.fillRect(artX, artY, artW, artH);
+            ctx.restore();
         }
         const artFade = ctx.createLinearGradient(0, artY + artH - 70, 0, artY + artH);
         artFade.addColorStop(0, 'rgba(0,0,0,0)');

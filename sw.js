@@ -1,4 +1,4 @@
-const VERSION = 'v75-personnages';
+const VERSION = 'v76-visuel-sobre';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -11,19 +11,10 @@ const ASSETS = [
   './decouverte.html',
   './choix-simples.js?v=1',
   './choix-simples.js?v=74',
-  './personnages.js?v=75',
-  './assets/personnages/collegues.webp',
-  './assets/personnages/commercant.webp',
-  './assets/personnages/couple.webp',
+  './personnages.js?v=76',
   './assets/personnages/famille.webp',
-  './assets/personnages/femme-elegante.webp',
-  './assets/personnages/femme-reflexion.webp',
-  './assets/personnages/homme-affaires.webp',
-  './assets/personnages/homme-elegant.webp',
-  './assets/personnages/medecin.webp',
   './assets/personnages/mere.webp',
   './assets/personnages/pere-age.webp',
-  './assets/personnages/sage.webp',
   './assets/personnages/bia.webp',
   './manifest.json',
   './audio-controller.js',

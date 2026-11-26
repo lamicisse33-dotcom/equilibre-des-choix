@@ -4,9 +4,9 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=75';
+import { GameEngine } from './game-engine.js?v=76';
 import { recordJourney, journeyStats, portrait } from './choix-simples.js?v=74';
-import { SceneManager } from './scene-manager.js?v=75';
+import { SceneManager } from './scene-manager.js?v=76';
 import { UIController } from './ui-controller.js?v=74';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js?v=72';

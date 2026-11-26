@@ -3,8 +3,8 @@ import { frameCards } from './immersive-layout.js?v=73';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import TWEEN from 'three/addons/libs/tween.module.js';
 import { TableController } from './table-controller.js';
-import { CardController } from './card-controller.js?v=75';
-import { PORTRAITS } from './personnages.js?v=75';
+import { CardController } from './card-controller.js?v=76';
+import { PORTRAITS } from './personnages.js?v=76';
 import { VFXController } from './vfx-controller.js';
 
 export class SceneManager {
