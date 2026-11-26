@@ -4,8 +4,8 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=80';
-import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=80';
+import { GameEngine } from './game-engine.js?v=81';
+import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=81';
 import { SceneManager } from './scene-manager.js?v=80';
 import { UIController } from './ui-controller.js?v=80';
 import { AudioController } from './audio-controller.js';
@@ -882,6 +882,24 @@ class App {
         this.audio.playSFX('card-flip-sfx', 0.25);
     }
 
+    terminerDecision() {
+        const h=this.engine.choixSimples?.history.at(-1);
+        const echo=h?.echo;
+        const dialog=document.getElementById('echo-destin');
+        if(!echo||!dialog||!dialog.showModal){this.isProcessing=false;this.startNewTurn();return;}
+        document.getElementById('retour-decision').hidden=true;
+        this.ui.arreterLecture();
+        dialog.querySelector('[data-echo-origine]').textContent='Une décision du tour '+echo.origine+' vous rattrape…';
+        dialog.querySelector('[data-echo-titre]').textContent=echo.titre;
+        dialog.querySelector('[data-echo-texte]').textContent=echo.texte;
+        dialog.querySelector('[data-echo-note]').textContent=echo.note;
+        const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
+        ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const row=document.createElement('div');row.textContent=name+' : '+(echo.delta[i]>0?'+':'')+echo.delta[i];rows.append(row);});
+        dialog.addEventListener('close',()=>{this.isProcessing=false;this.startNewTurn();},{once:true});
+        this.audio.playSFX(echo.delta.some(v=>v<0)?'game-over-sfx':'harmony-sfx',0.25);
+        dialog.showModal();
+    }
+
     confirmCard(data, mesh) {
         if (this.isProcessing) return;
         clearTimeout(this._lectureSituationTimer);
@@ -915,13 +933,11 @@ class App {
         // definitivement, sans erreur visible pour le joueur.
         try {
             this.scene.cardController.play(mesh, () => {
-                this.isProcessing = false;
-                this.startNewTurn();
+                this.terminerDecision();
             });
         } catch (err) {
             console.error('Animation de carte interrompue :', err);
-            this.isProcessing = false;
-            this.startNewTurn();
+            this.terminerDecision();
         }
         this.selectedCard = null;
         this.lastHovered = null;

@@ -25,7 +25,7 @@ import {
     MECHANICS
 } from './game-config.js';
 
-import { SITUATIONS, newJourneyGame, decide, next, bilan, valeursApres } from './choix-simples.js?v=80';
+import { SITUATIONS, newJourneyGame, decide, next, bilan, valeursApres } from './choix-simples.js?v=81';
 import { portraitPour } from './personnages.js?v=76';
 export class GameEngine {
     activerChoixSimples() {

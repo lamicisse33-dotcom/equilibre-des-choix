@@ -1,4 +1,4 @@
-const VERSION = 'v80-dilemmes';
+const VERSION = 'v81-destin';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -9,7 +9,7 @@ const ASSETS = [
   './',
   './index.html',
   './decouverte.html',
-  './choix-simples.js?v=80',
+  './choix-simples.js?v=81',
   './personnages.js?v=76',
   './assets/personnages/famille.webp',
   './assets/personnages/mere.webp',
@@ -22,7 +22,7 @@ const ASSETS = [
   './duel-controller.js',
   './game-config.js',
   './game-engine.js',
-  './game-engine.js?v=80',
+  './game-engine.js?v=81',
   './strategy-mode.js',
   './strategy-ui.js',
   './strategy-ui.css',
@@ -38,7 +38,7 @@ const ASSETS = [
   './transition-controller.js',
   './ui-controller.js',
   './ui-controller.js?v=80',
-  './main.js?v=80',
+  './main.js?v=81',
   './vfx-controller.js',
   './assets/card-back-texture-v2.webp',
   './assets/card-back-texture.webp',
