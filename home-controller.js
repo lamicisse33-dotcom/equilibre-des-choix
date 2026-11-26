@@ -47,6 +47,7 @@ export class HomeController {
         }
 
         this.elements.newGameBtn?.addEventListener('click', () => {
+            if(new URLSearchParams(location.search).get('vue')!=='classique'){this.callbacks.onPlay(false,null,false);return;}
             // Premiere partie : on lance directement avec le pantheon neutre.
             // Demander un choix strategique entre quatre pantheons avant que le
             // joueur ait vu une seule carte n'a aucun sens.
@@ -318,7 +319,7 @@ export class HomeController {
      * apparaissent une fois la premiere partie terminee.
      */
     appliquerModeDecouverte(gamesPlayed) {
-        this.premiereFois = !gamesPlayed;
+        this.premiereFois = !gamesPlayed || new URLSearchParams(location.search).get('vue')!=='classique';
         [this.elements.duelBtn, this.elements.heritageBtn, this.elements.leaderboardBtn,
          this.elements.memoriesBtn, this.elements.statsBtn, this.elements.meditationBtn]
             .forEach(b => { if (b) b.style.display = this.premiereFois ? 'none' : ''; });

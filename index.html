@@ -1447,6 +1447,7 @@
     </script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/23.1.3/tween.umd.js"></script>
 
+<style>html:not(.classic-mode) .classic-rule{display:none}</style><script>if(new URLSearchParams(location.search).get('vue')==='classique')document.documentElement.classList.add('classic-mode');</script>
 </head>
 <body>
 
@@ -1498,11 +1499,11 @@
         <div class="stat-box" style="max-width: 500px; pointer-events: auto;">
             <h3 style="font-family: var(--font-serif); color: var(--gold); letter-spacing: 5px;" data-i18n="rules">RÈGLES</h3>
             <div style="text-align: left; line-height: 1.6; font-size: 0.85rem; margin-bottom: 25px;">
-                <p data-i18n="rules_1">Maintenez l'équilibre entre les 4 piliers de vie.</p>
-                <p data-i18n="rules_2">Chaque pilier doit rester entre 1 et 99 pour survivre.</p>
-                <p style="color: var(--gold-bright); font-weight: 600;" data-i18n="rules_victoire">POUR GAGNER : maintenez vos 4 piliers entre 40 et 85 pendant 4 tours de suite.</p>
-                <p data-i18n="rules_3">Le compteur HARMONIE en haut de l'écran indique votre progression, et la zone dorée sur chaque jauge montre où le pilier doit se tenir.</p>
-                <p data-i18n="rules_4">Chaque carte donne et chaque carte prend. Choisissez celle dont le sacrifice vous coûte le moins.</p>
+                <p>Mode découverte : une situation, trois cartes, dix décisions. Gardez vos quatre piliers proches de 50.</p><p>Chaque carte affiche ses conséquences. Votre bilan final est sur 100.</p><p><a href="./?vue=classique" style="color:var(--gold)">Accéder aux règles et au mode classique</a></p><p data-i18n="rules_1" class="classic-rule">Maintenez l'équilibre entre les 4 piliers de vie.</p>
+                <p class="classic-rule" data-i18n="rules_2">Chaque pilier doit rester entre 1 et 99 pour survivre.</p>
+                <p style="color: var(--gold-bright); font-weight: 600;" class="classic-rule" data-i18n="rules_victoire">POUR GAGNER : maintenez vos 4 piliers entre 40 et 85 pendant 4 tours de suite.</p>
+                <p class="classic-rule" data-i18n="rules_3">Le compteur HARMONIE en haut de l'écran indique votre progression, et la zone dorée sur chaque jauge montre où le pilier doit se tenir.</p>
+                <p class="classic-rule" data-i18n="rules_4">Chaque carte donne et chaque carte prend. Choisissez celle dont le sacrifice vous coûte le moins.</p>
             </div>
             <button id="close-rules-btn" class="menu-btn secondary" style="width: 100%;" data-i18n="close">Fermer</button>
         </div>
@@ -1778,6 +1779,7 @@
             </div>
         </div>
 
+        <div id="situation-simple" hidden style="position:absolute;top:105px;left:50%;transform:translateX(-50%);width:min(85vw,650px);padding:8px 14px;background:rgba(10,15,20,.85);border:1px solid rgba(197,160,89,.45);border-radius:8px;color:#f3e5ab;font-size:clamp(11px,2.5vw,15px);line-height:1.35;text-align:center;z-index:16;pointer-events:none"></div>
         <div id="active-events-container" style="position: absolute; top: 180px; left: 40px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 15;">
             <!-- Active world events will be injected here -->
         </div>
@@ -1992,7 +1994,7 @@
 
     <script type="module">
         if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
-            import('./main.js?v=70.1');
+            import('./main.js?v=72');
         } else {
             import('./strategy-ui.js?v=69');
         }

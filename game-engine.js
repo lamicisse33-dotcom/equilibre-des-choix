@@ -25,7 +25,19 @@ import {
     MECHANICS
 } from './game-config.js';
 
+import { SITUATIONS, newGame, decide, next, bilan } from './choix-simples.js?v=1';
 export class GameEngine {
+    activerChoixSimples() {
+        this.choixSimples = newGame(() => this.seededRandom());
+        this.selectedPantheon = null;
+        this.refreshCredits = 0;
+        this.score = 100;
+        this.pillars = Object.fromEntries(PILLARS.map(p => [p, 50]));
+    }
+    situationSimple() {
+        return this.choixSimples && SITUATIONS[this.choixSimples.order[this.turn]];
+    }
+
     // Au-dela de ce tour, les effets cessent d'enfler. Sans ce plafond, une
     // partie longue -- en particulier en mode Meditation, qui ne se termine
     // jamais -- voyait tous les malus devenir des bonus.
@@ -42,6 +54,7 @@ export class GameEngine {
 
     /** Duree de l'etape en cours, en semaines. Une carte = une semaine. */
     semainesRequises() {
+        if (this.choixSimples) return 10;
         const e = PARCOURS[Math.min(this.etapeParcours || 0, PARCOURS.length - 1)];
         return e ? e.semaines : 3;
     }
@@ -53,6 +66,7 @@ export class GameEngine {
 
     /** La zone d'equilibre a atteindre pour cette etape. */
     zoneEquilibre() {
+        if (this.choixSimples) return {bas:35,haut:65};
         const e = this.etapeCourante();
         return { bas: e ? e.bas : 40, haut: e ? e.haut : 60 };
     }
@@ -129,6 +143,7 @@ export class GameEngine {
     }
 
     reset(seed = null, pantheon = null, meditationMode = false) {
+        this.choixSimples = null;
         this.selectedPantheon = pantheon;
         this.isMeditationMode = meditationMode;
         PILLARS.forEach(p => {
@@ -180,6 +195,7 @@ export class GameEngine {
 
     loadState(state) {
         if (!state) return;
+        this.choixSimples = state.choixSimples || null;
         this.pillars = { ...state.pillars };
         this.score = state.score || 0;
         this.turn = state.turn || 0;
@@ -238,6 +254,15 @@ export class GameEngine {
      * Lecture & Choix Logic: Reading scenarios and preparing card objects
      */
     generateCards(count = 3) {
+        if (this.choixSimples) {
+            const s = this.situationSimple();
+            if (!s) return [];
+            return s[3].map((c,i) => {
+                const category=PILLARS[c[2].indexOf(Math.max(...c[2]))];
+                const d=PILLAR_DEFINITIONS[category];
+                return {id:'decision-'+this.turn+'-'+i,title:c[0],desc:c[1],category,rarity:'common',color:d.color,icon:d.icon,art:d.art,animation:'default',effects:Object.fromEntries(PILLARS.map((p,j)=>[p,c[2][j]])),simpleChoice:i};
+            });
+        }
         // Use count or modified count
         const targetCount = count + this.activeModifiers.extraCards;
         const cards = [];
@@ -414,6 +439,23 @@ export class GameEngine {
      */
     applyCard(card) {
         if (this.isGameOver) return;
+        if (this.choixSimples) {
+            const g=decide(this.choixSimples,card.simpleChoice);
+            if(g===this.choixSimples)return;
+            this.choixSimples=next(g);
+            const h=g.history.at(-1);
+            this.history.push({turn:this.turn,cardId:card.id,title:card.title,effects:Object.fromEntries(PILLARS.map((p,i)=>[p,h.delta[i]]))});
+            this.pillars=Object.fromEntries(PILLARS.map((p,i)=>[p,g.values[i]]));
+            this.turn=g.history.length;
+            const b=bilan(g);
+            this.score=b.score;
+            this.reachedHarmony=b.zone===4;
+            this.activeSynergy=null;
+            this.triggeredAbilities=[];
+            this.isGameOver=this.turn===10;
+            this.isVictory=this.isGameOver&&b.zone===4;
+            return;
+        }
 
         this.activeSynergy = this.getSynergyEffect(card.category);
         this.lastPlayedCategory = card.category;

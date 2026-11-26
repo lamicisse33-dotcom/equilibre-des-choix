@@ -391,7 +391,7 @@ export class UIController {
         // semaines n'y figurait pas, elle restait donc figee a "Semaine 0 / 3".
         if (this.elements.semaineRestante) {
             this.elements.semaineRestante.textContent =
-                `${this.callbacks.getTranslation('semaine')} ${gameState.turn} / ${requis}`;
+                `${gameState.choixSimples?'Décisions':this.callbacks.getTranslation('semaine')} ${gameState.turn} / ${requis}`;
         }
         if (this.elements.goalBox) {
             this.elements.goalBox.classList.toggle('complet', enZone === 4);
@@ -1078,6 +1078,14 @@ export class UIController {
                 this.elements.victoryTitle.textContent =
                     t('victoire_rang').replace('{titre}', titre);
             }
+        }
+        if(gameState.choixSimples){
+            const zone=gameState.pilliersEnZone();
+            if(this.elements.gameOverTitle)this.elements.gameOverTitle.textContent=zone===4?'Un bel équilibre':'Un équilibre à renforcer';
+            if(this.elements.gameOverDesc)this.elements.gameOverDesc.textContent='Dix décisions terminées. '+zone+' piliers sur 4 entre 35 et 65. Votre équilibre : '+gameState.score+' / 100.';
+            if(this.elements.gameOverBanner)this.elements.gameOverBanner.textContent='BILAN DE VOS DÉCISIONS';
+            this.elements.gameOverCause?.classList.add('hidden');
+            this.elements.victoryTitle?.classList.add('hidden');
         }
         if (victoire) this.lancerFeuxArtifice();
     }

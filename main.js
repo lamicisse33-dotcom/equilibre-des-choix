@@ -4,11 +4,11 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=70';
+import { GameEngine } from './game-engine.js?v=72';
 import { SceneManager } from './scene-manager.js?v=70.1';
-import { UIController } from './ui-controller.js?v=70';
+import { UIController } from './ui-controller.js?v=72';
 import { AudioController } from './audio-controller.js';
-import { HomeController } from './home-controller.js';
+import { HomeController } from './home-controller.js?v=72';
 import { PersistenceController } from './persistence-controller.js?v=70';
 import { ConfigController } from './config-controller.js?v=70';
 import { NarrativeController } from './narrative-controller.js';
@@ -73,6 +73,7 @@ class App {
                 if (!isContinue) {
                     this.engine=new GameEngine(this.persistence.getStats(),this.persistence.getHeritage());
                     this.engine.reset(null, pantheon, meditationMode);
+                    if (!meditationMode && new URLSearchParams(location.search).get('vue') !== 'classique') this.engine.activerChoixSimples();
                     this.narrative.reset();
                     this.persistence.clearGameProgress();
                 }
@@ -84,7 +85,7 @@ class App {
                 this.scene.playIntro(() => {
                     // Initiation : trois messages avant la premiere main, une
                     // seule fois dans la vie du joueur.
-                    if (!this.persistence.getStats().gamesPlayed && !this.initiationFaite) {
+                    if (!this.engine.choixSimples && !this.persistence.getStats().gamesPlayed && !this.initiationFaite) {
                         this.initiationFaite = true;
                         this.ui.lancerInitiation(() => this.startNewTurn());
                     } else {
@@ -507,7 +508,9 @@ class App {
         this.audio.playSFX('ui-confirm-sfx', 0.2);
         this.audio.stopDefeatAmbient();
         this.audio.fadeBGM(1.0, 1500, this.engine.turn);
+        const simple=!!this.engine.choixSimples;
         this.engine.reset(null,this.engine.selectedPantheon,this.engine.isMeditationMode);
+        if(simple)this.engine.activerChoixSimples();
         if(this.duel.isDuelActive)await this.duel.connect(this.engine.currentSeed);
         this.narrative.reset();
         this.persistence.clearGameProgress();
@@ -552,9 +555,12 @@ class App {
         this.audio.playSFX('card-appear-sfx', 0.15);
         
         // Narrative injection logic
-        if(!this.duel.isDuelActive)this.narrative.checkTriggers(this.engine);
+        if(!this.duel.isDuelActive&&!this.engine.choixSimples)this.narrative.checkTriggers(this.engine);
         let cards = this.engine.generateCards(3);
-        if(!this.duel.isDuelActive)cards = this.narrative.injectNarrativeCards(cards);
+        if(!this.duel.isDuelActive&&!this.engine.choixSimples)cards = this.narrative.injectNarrativeCards(cards);
+        const situation=document.getElementById('situation-simple');
+        const s=this.engine.situationSimple();
+        if(situation){situation.hidden=!s;situation.textContent=s?s[1]+' — '+s[2]:'';}
         
         this.scene.createCardMeshes(cards);
         // Reperes du carrousel : autant de points que de cartes, le point
@@ -562,7 +568,7 @@ class App {
         // Conseil : la carte qui preserve le mieux l'equilibre. Elargir la
         // cible de victoire n'aidait pas le debutant -- il ne la visait jamais.
         // Lui montrer quelle carte y mene le transforme en joueur qui vise.
-        this.ui.montrerConseil(this.conseillerCarte(cards), this.conseilActif());
+        this.ui.montrerConseil(this.engine.choixSimples?null:this.conseillerCarte(cards), !this.engine.choixSimples&&this.conseilActif());
 
         const cc = this.scene.cardController;
         if (cc) {
@@ -574,7 +580,7 @@ class App {
         }
 
         // Update UI with refresh availability if needed
-        if (this.engine.activeModifiers.refreshAvailable || this.engine.refreshCredits>0) {
+        if (!this.engine.choixSimples && (this.engine.activeModifiers.refreshAvailable || this.engine.refreshCredits>0)) {
             this.ui.showRefreshButton(true, () => {
                 this.audio.playSFX('card-fade-sfx', 0.2);
                 if(this.engine.activeModifiers.refreshAvailable)this.engine.activeModifiers.refreshAvailable=false;
@@ -643,7 +649,8 @@ class App {
         // restait vide quel que soit le nombre de parties.
         // Avancement du parcours avant toute chose : l'ecran de fin doit
         // annoncer l'etape franchie et proposer la suivante.
-        this.resultatParcours = this.avancerParcours();
+        this.resultatParcours = this.engine.choixSimples?null:this.avancerParcours();
+        const situation=document.getElementById('situation-simple');if(situation)situation.hidden=true;
         if (this.resultatParcours && this.parcours) {
             const e = this.parcours[Math.min(this.resultatParcours.etape, this.parcours.length - 1)];
             this.resultatParcours.tenue = e ? e.cle : 'duree_generique';
@@ -651,7 +658,7 @@ class App {
             this.resultatParcours.titreEtape = e ? e.titre : null;
         }
 
-        if (this.engine.turn > 0) {
+        if (this.engine.turn > 0 && !this.engine.choixSimples) {
             this.persistence.saveScore(
                 this.config.currentConfig.playerName || 'Gardien',
                 Math.round(this.engine.score)
@@ -672,7 +679,7 @@ class App {
         this.audio.transitionToDefeat();
         this.audio.playSFX(isNewRecord ? 'victory-sfx' : 'game-over-sfx', isNewRecord ? 0.3 : 0.1);
         
-        this.persistence.recordGameEnd(this.engine.score, this.engine.turn, this.engine.reachedHarmony, this.engine.unlockedTrophies);
+        if(!this.engine.choixSimples)this.persistence.recordGameEnd(this.engine.score, this.engine.turn, this.engine.reachedHarmony, this.engine.unlockedTrophies);
         
         // Save to leaderboard if Duel mode
         if (this.duel.isDuelActive) {
@@ -862,7 +869,7 @@ class App {
         this.isProcessing = true;
 
         this.engine.applyCard(data);
-        this.narrative.onCardPlayed(data);
+        if(!this.engine.choixSimples)this.narrative.onCardPlayed(data);
         this.scene.resetCamera();
         this.audio.refreshActiveVolumes(false, this.engine.turn);
         this.audio.playSFX('card-fade-sfx', 0.25);
