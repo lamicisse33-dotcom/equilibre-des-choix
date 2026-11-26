@@ -514,6 +514,11 @@ export class UIController {
         }
     }
 
+    lireSituation(titre,texte) {
+        this.lectureCoupee=false;
+        this.lireCarte({title:titre,desc:texte,effects:{},situation:true});
+    }
+
     lireCarte(data) {
         // Etat propre : le bouton ne reapparait qu'une fois la voix partie,
         // ou si le navigateur refuse la lecture automatique.
@@ -530,8 +535,9 @@ export class UIController {
         // Titre, description, puis les points pilier par pilier. Sans les
         // chiffres, l'ecoute ne suffit pas a decider : ce sont eux qui portent
         // le choix.
-        const texte = `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
+        const texte = data.situation ? `${data.title}. ${data.desc || ''} Que décidez-vous ?` : `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
         const u = new SpeechSynthesisUtterance(texte);
+        u._situation=!!data.situation;
         u.lang = 'fr-FR';
         u.volume = volume;
         u.rate = 1.0;
@@ -671,7 +677,7 @@ export class UIController {
 
     masquerDetail() {
         setTimeout(() => this.rendreReperes(), 60);
-        this.arreterLecture();
+        if(!this.utteranceEnCours?._situation)this.arreterLecture();
         this.derniereCarteLue = null;
         this.elements.cardInfo?.classList.add('hidden');
         if (this.elements.cardInfo) this.elements.cardInfo.style.opacity = '0';

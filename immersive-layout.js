@@ -23,8 +23,9 @@ export function projectedBounds({layout,xs,lookY,dist,cardWidth=1.49,cardHeight=
   }
   return {left:Math.min(...points.map(p=>p.x)),right:Math.max(...points.map(p=>p.x)),top:Math.min(...points.map(p=>p.y)),bottom:Math.max(...points.map(p=>p.y))};
 }
-export function frameCards({width,height,xs=[-2.15,0,2.15],slotY=1.284,slotZ=4.1,cardWidth=1.49,cardHeight=2.79375}){
-  const layout=screenLayout(width,height),opts={layout,xs,slotY,slotZ,cardWidth,cardHeight};
+export function frameCards({width,height,xs=[-2.15,0,2.15],slotY=1.284,slotZ=4.1,cardWidth=1.49,cardHeight=2.79375,desktopShift=0}){
+  const layout=screenLayout(width,height);layout.top+=desktopShift;layout.bottom+=desktopShift;
+  const opts={layout,xs,slotY,slotZ,cardWidth,cardHeight};
   function place(dist){
     let lo=-40,hi=40;
     for(let i=0;i<42;i++){

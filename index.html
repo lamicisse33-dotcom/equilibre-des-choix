@@ -1448,6 +1448,23 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/tween.js/23.1.3/tween.umd.js"></script>
 
 <style>html:not(.classic-mode) .classic-rule{display:none}</style><script>if(new URLSearchParams(location.search).get('vue')==='classique')document.documentElement.classList.add('classic-mode');</script>
+<style>
+#situation-simple[hidden]{display:none!important}
+#situation-simple{position:absolute;top:clamp(68px,11vh,112px);left:50%;transform:translateX(-50%);width:min(67vw,760px);z-index:16;pointer-events:none;text-align:center;filter:drop-shadow(0 9px 15px #0009)}
+.parchemin-feuille{position:relative;padding:13px 30px 12px;color:#422e18;background:radial-gradient(ellipse at center,#fff0c9 0%,#ead19a 68%,#b89256 100%);border:1px solid #a37d42;border-radius:5px;box-shadow:inset 0 0 24px #77502344}
+.parchemin-feuille:before,.parchemin-feuille:after{content:"";position:absolute;top:-5px;bottom:-5px;width:13px;background:linear-gradient(90deg,#49321a,#c69c5a 30%,#efd5a1 48%,#806036 85%,#422d17);border-radius:6px;box-shadow:2px 2px 5px #0006}
+.parchemin-feuille:before{left:-6px}.parchemin-feuille:after{right:-6px}
+#situation-simple.ouverture .parchemin-feuille{animation:deplier-parchemin .85s cubic-bezier(.2,.7,.2,1) both}
+@keyframes deplier-parchemin{from{clip-path:inset(0 49%);opacity:.25;transform:scaleX(.15)}to{clip-path:inset(0 -8px);opacity:1;transform:scaleX(1)}}
+.parchemin-kicker{font:700 10px/1.2 Montserrat,sans-serif;letter-spacing:2px;color:#72512b}
+#situation-titre{font:700 clamp(16px,1.8vw,24px)/1.2 Cinzel,Georgia,serif;margin:5px 0;color:#493019}
+#situation-texte{font:500 clamp(13px,1.4vw,17px)/1.4 Montserrat,system-ui,sans-serif;margin:0}
+#situation-lecture{pointer-events:auto;background:transparent;color:#60421f;border:0;border-bottom:1px solid #9c743c;font:600 11px Montserrat,sans-serif;cursor:pointer;margin-top:6px;padding:2px 5px}
+body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-simples #peril-alert{display:none!important}
+@media(max-width:700px){#situation-simple{width:90vw;top:83px}.parchemin-feuille{padding:8px 15px}.parchemin-kicker{font-size:8px}#situation-titre{font-size:15px}#situation-texte{font-size:11px;line-height:1.3}#situation-lecture{font-size:10px}}
+@media(max-height:500px){#situation-simple{top:52px;width:62vw}.parchemin-feuille{padding:5px 15px}.parchemin-kicker{display:none}#situation-titre{font-size:13px;margin:1px}#situation-texte{font-size:10px}#situation-lecture{margin-top:1px}}
+@media(prefers-reduced-motion:reduce){#situation-simple.ouverture .parchemin-feuille{animation:none}}
+</style>
 </head>
 <body>
 
@@ -1779,7 +1796,7 @@
             </div>
         </div>
 
-        <div id="situation-simple" hidden style="position:absolute;top:105px;left:50%;transform:translateX(-50%);width:min(85vw,650px);padding:8px 14px;background:rgba(10,15,20,.85);border:1px solid rgba(197,160,89,.45);border-radius:8px;color:#f3e5ab;font-size:clamp(11px,2.5vw,15px);line-height:1.35;text-align:center;z-index:16;pointer-events:none"></div>
+        <section id="situation-simple" hidden aria-label="Situation du tour"><div class="parchemin-feuille"><div class="parchemin-kicker">LE MOMENT DU CHOIX <span id="situation-numero"></span></div><h2 id="situation-titre"></h2><p id="situation-texte"></p><button id="situation-lecture" type="button" aria-label="Relire la situation">♪ Relire</button></div></section>
         <div id="active-events-container" style="position: absolute; top: 180px; left: 40px; display: flex; flex-direction: column; gap: 10px; pointer-events: none; z-index: 15;">
             <!-- Active world events will be injected here -->
         </div>
@@ -1994,7 +2011,7 @@
 
     <script type="module">
         if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
-            import('./main.js?v=72');
+            import('./main.js?v=73');
         } else {
             import('./strategy-ui.js?v=69');
         }

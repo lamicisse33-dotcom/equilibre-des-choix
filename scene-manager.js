@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { frameCards } from './immersive-layout.js?v=70';
+import { frameCards } from './immersive-layout.js?v=73';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import TWEEN from 'three/addons/libs/tween.module.js';
 import { TableController } from './table-controller.js';
@@ -540,7 +540,7 @@ export class SceneManager {
         const carousel=CardController.estCarrousel(width/height,nbCartes);
         const xs=carousel?[0]:slots.length?slots.map(s=>s.x):[-2.15,0,2.15];
         const ref=slots[0]||{y:1+CardController.LIFT_Y,z:4.1};
-        const f=frameCards({width,height,xs,slotY:ref.y,slotZ:ref.z,
+        const f=frameCards({width,height,xs,desktopShift:this.choixSimples&&width>=900&&height>=600?.065:0,slotY:ref.y,slotZ:ref.z,
             cardWidth:CardController.CARD_W,cardHeight:CardController.CARD_H});
         this.camera.fov=f.fov;this.camera.aspect=width/height;this.camera.updateProjectionMatrix();
         const look=VFXController.PLAY_LOOK;look.y=f.lookY;

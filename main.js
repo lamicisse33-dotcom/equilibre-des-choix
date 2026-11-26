@@ -5,8 +5,8 @@
 
 import { createEngine } from './strategy-mode.js?v=70';
 import { GameEngine } from './game-engine.js?v=72';
-import { SceneManager } from './scene-manager.js?v=70.1';
-import { UIController } from './ui-controller.js?v=72';
+import { SceneManager } from './scene-manager.js?v=73';
+import { UIController } from './ui-controller.js?v=73';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js?v=72';
 import { PersistenceController } from './persistence-controller.js?v=70';
@@ -552,7 +552,7 @@ class App {
         this.ui.showAutosave();
         
         this.ui.updateHistory(this.engine.history);
-        this.audio.playSFX('card-appear-sfx', 0.15);
+        if(!this.engine.choixSimples)this.audio.playSFX('card-appear-sfx', 0.15);
         
         // Narrative injection logic
         if(!this.duel.isDuelActive&&!this.engine.choixSimples)this.narrative.checkTriggers(this.engine);
@@ -560,7 +560,22 @@ class App {
         if(!this.duel.isDuelActive&&!this.engine.choixSimples)cards = this.narrative.injectNarrativeCards(cards);
         const situation=document.getElementById('situation-simple');
         const s=this.engine.situationSimple();
-        if(situation){situation.hidden=!s;situation.textContent=s?s[1]+' — '+s[2]:'';}
+        document.body.classList.toggle('choix-simples',!!s);
+        this.scene.choixSimples=!!s;
+        if(situation){
+            clearTimeout(this._lectureSituationTimer);
+            situation.hidden=!s;
+            if(s){
+                document.getElementById('situation-numero').textContent='· '+(this.engine.turn+1)+' / 10';
+                document.getElementById('situation-titre').textContent=s[1];
+                document.getElementById('situation-texte').textContent=s[2];
+                situation.classList.remove('ouverture');void situation.offsetWidth;situation.classList.add('ouverture');
+                this.audio.playSFX('card-appear-sfx',0.22);
+                const lire=()=>{clearTimeout(this._lectureSituationTimer);this.ui.lireSituation(s[1],s[2]);};
+                document.getElementById('situation-lecture').onclick=lire;
+                this._lectureSituationTimer=setTimeout(()=>{if(!this.isPaused&&!document.hidden&&!situation.hidden&&!this.selectedCard&&!this.lastHovered)lire();},850);
+            }
+        }
         
         this.scene.createCardMeshes(cards);
         // Reperes du carrousel : autant de points que de cartes, le point
@@ -650,6 +665,7 @@ class App {
         // Avancement du parcours avant toute chose : l'ecran de fin doit
         // annoncer l'etape franchie et proposer la suivante.
         this.resultatParcours = this.engine.choixSimples?null:this.avancerParcours();
+        clearTimeout(this._lectureSituationTimer);this.ui.arreterLecture();
         const situation=document.getElementById('situation-simple');if(situation)situation.hidden=true;
         if (this.resultatParcours && this.parcours) {
             const e = this.parcours[Math.min(this.resultatParcours.etape, this.parcours.length - 1)];
@@ -866,6 +882,7 @@ class App {
 
     confirmCard(data, mesh) {
         if (this.isProcessing) return;
+        clearTimeout(this._lectureSituationTimer);
         this.isProcessing = true;
 
         this.engine.applyCard(data);
