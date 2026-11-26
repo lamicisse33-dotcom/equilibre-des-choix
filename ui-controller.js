@@ -455,8 +455,8 @@ export class UIController {
             const el = this.elements.pillars[pillar];
             if (el) {
                 // Smooth transition is already in CSS
-                el.style.height = `${val}%`;
-                el.style.width = `${val}%`; // For horizontal layouts on mobile
+                el.style.height = '100%';
+                el.style.width = `${Math.max(0,Math.min(100,val))}%`; // For horizontal layouts on mobile
                 
                 // Color grading based on value
                 if (val < 20 || val > 80) {
@@ -921,7 +921,7 @@ export class UIController {
             const previewEl = this.elements.previews[pillar];
             if (previewEl && currentPillars) {
                 const nextVal = Math.max(0, Math.min(100, currentPillars[pillar] + val));
-                previewEl.style.height = `${nextVal}%`;
+                previewEl.style.height = '100%';
                 previewEl.style.width = `${nextVal}%`; // For horizontal layouts
                 previewEl.style.opacity = '0.5';
             }
@@ -942,7 +942,7 @@ export class UIController {
         if(forecast){
             for(const pillar of PILLARS){
                 const el=this.elements.previews[pillar];if(!el)continue;
-                el.style.height=forecast.pillars[pillar]+'%';el.style.width=forecast.pillars[pillar]+'%';el.style.opacity='.6';
+                el.style.height='100%';el.style.width=Math.max(0,Math.min(100,forecast.pillars[pillar]))+'%';el.style.opacity='.6';
             }
             effectsHtml+='<div class="forecast-summary">'+(forecast.isVictory?'✦ Étape réussie':forecast.isGameOver?'⚠ Ce choix termine la partie':forecast.inZone+'/4 piliers dans la zone')+' · +'+forecast.deltaScore+' points</div>';
         }
@@ -1085,8 +1085,10 @@ export class UIController {
                     t('victoire_rang').replace('{titre}', titre);
             }
         }
+        const miroir=document.getElementById('miroir-resultat');if(miroir){miroir.hidden=!gameState.choixSimples;miroir.replaceChildren();}
         if(gameState.choixSimples){
             const zone=gameState.pilliersEnZone();
+            if(miroir&&gameState.miroir){const m=gameState.miroir,d=gameState.parcoursPersonnel;const title=document.createElement('h3');title.textContent='Le miroir de vos choix — '+m.dominant;miroir.append(title);const p=document.createElement('p');p.textContent='Tendances de cette partie : '+Object.entries(m.traits).map(([k,v])=>k+' ('+v+')').join(', ')+'. Essaie de trouver ton équilibre.';miroir.append(p);if(d){const names=['Spiritualité','Amour','Santé','Argent'];const line=document.createElement('p');line.textContent='Parcours : '+d.games+' parties · '+d.scores.map((v,i)=>names[i]+' '+(v===null?'—':v+'/100')).join(' · ');miroir.append(line);const known=d.scores.map((v,i)=>({v,i})).filter(x=>x.v!==null).sort((a,b)=>a.v-b.v);const q=document.createElement('p');q.textContent=d.master?'Maître de l’équilibre !':known.length?'Prochain défi : '+names[known[0].i]+'.':'Continue à découvrir tes choix.';miroir.append(q);}const note=document.createElement('small');note.textContent='Interprétation ludique des décisions, pas un jugement de personnalité.';miroir.append(note);}
             if(this.elements.gameOverTitle)this.elements.gameOverTitle.textContent=zone===4?'Un bel équilibre':'Un équilibre à renforcer';
             if(this.elements.gameOverDesc)this.elements.gameOverDesc.textContent='Dix décisions terminées. '+zone+' piliers sur 4 entre 35 et 65. Votre équilibre : '+gameState.score+' / 100.';
             if(this.elements.gameOverBanner)this.elements.gameOverBanner.textContent='BILAN DE VOS DÉCISIONS';

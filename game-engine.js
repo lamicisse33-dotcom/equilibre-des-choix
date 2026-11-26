@@ -25,10 +25,10 @@ import {
     MECHANICS
 } from './game-config.js';
 
-import { SITUATIONS, newGame, decide, next, bilan } from './choix-simples.js?v=1';
+import { SITUATIONS, newJourneyGame, decide, next, bilan } from './choix-simples.js?v=74';
 export class GameEngine {
     activerChoixSimples() {
-        this.choixSimples = newGame(() => this.seededRandom());
+        this.choixSimples = newJourneyGame(() => this.seededRandom());
         this.selectedPantheon = null;
         this.refreshCredits = 0;
         this.score = 100;

@@ -1435,7 +1435,7 @@
         }
 
 </style>
-<link rel="stylesheet" href="immersive-ui.css?v=70.1">
+<link rel="stylesheet" href="immersive-ui.css?v=74">
     <script type="importmap">
         {
             "imports": {
@@ -1492,6 +1492,7 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
                 <div class="logo-subtext" data-i18n="logo_subtext">CHAQUE DÉCISION A DES CONSÉQUENCES.</div>
             </div>
             <div class="main-menu">
+                <button id="personal-journey-btn" class="menu-btn secondary" type="button">Mon équilibre</button>
                 <button id="new-game-btn" class="menu-btn gold" data-i18n="play">Jouer</button>
                 <button id="meditation-mode-btn" class="menu-btn gold" style="border-color: #10b981; color: #10b981;" data-i18n="meditation_mode">Mode Méditation</button>
                 <button id="duel-btn" class="menu-btn gold" style="border-color: #3498db; color: #3498db;" data-i18n="duel_mode">Mode Duel (Alpha)</button>
@@ -1511,6 +1512,7 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
         </div>
     </div>
 
+    <dialog id="personal-journey" style="width:min(580px,90vw);max-height:85dvh;overflow:auto;background:#10191d;color:#f1e6cd;border:1px solid #c5a059;border-radius:18px;padding:24px"><h2>Le chemin vers l'équilibre</h2><div id="personal-journey-content"></div><button class="menu-btn secondary" onclick="this.closest('dialog').close()">Fermer</button></dialog>
     <!-- RULES OVERLAY -->
     <div id="rules-overlay" class="hidden">
         <div class="stat-box" style="max-width: 500px; pointer-events: auto;">
@@ -1943,6 +1945,7 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
         </div>
 
         <div id="victory-rank" class="hidden"></div>
+        <div id="miroir-resultat" hidden style="max-width:560px;width:90%;text-align:left;margin:12px auto;padding:12px;border:1px solid #c5a05966;border-radius:12px;color:#f0ddad"></div>
         <div id="game-over-summary" style="margin-top: 18px; max-height: 190px; overflow-y: auto; font-size: 0.78rem; color: rgba(255,255,255,0.62); border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
             <!-- Summary of the life lived will be injected here -->
         </div>
@@ -2011,7 +2014,7 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
 
     <script type="module">
         if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
-            import('./main.js?v=73');
+            import('./main.js?v=74');
         } else {
             import('./strategy-ui.js?v=69');
         }

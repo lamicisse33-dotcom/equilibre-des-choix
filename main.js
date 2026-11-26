@@ -4,9 +4,10 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=72';
+import { GameEngine } from './game-engine.js?v=74';
+import { recordJourney, journeyStats, portrait } from './choix-simples.js?v=74';
 import { SceneManager } from './scene-manager.js?v=73';
-import { UIController } from './ui-controller.js?v=73';
+import { UIController } from './ui-controller.js?v=74';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js?v=72';
 import { PersistenceController } from './persistence-controller.js?v=70';
@@ -708,6 +709,7 @@ class App {
         
         this.engine.resultatParcours = this.resultatParcours;
         this.engine.semainesAcquises = this.persistence.getSemainesAcquises();
+        if(this.engine.choixSimples){this.engine.miroir=portrait(this.engine.choixSimples);this.engine.parcoursPersonnel=recordJourney(this.engine.choixSimples);}
         this.ui.showGameOver(this.engine, isNewRecord, this.duel.isDuelActive ? this.opponentData : null);
         
         await this.transition.fade(0, 1500);
@@ -938,3 +940,6 @@ class App {
 }
 
 new App();
+
+const nomsParcours=['Spiritualité','Amour','Santé','Argent'];
+document.getElementById('personal-journey-btn')?.addEventListener('click',()=>{const d=journeyStats();const el=document.getElementById('personal-journey-content');el.replaceChildren();const h=document.createElement('p');h.textContent=d.games+' parties terminées'+(d.master?' · Maître de l’équilibre':'');el.append(h);d.scores.forEach((v,i)=>{const p=document.createElement('p');p.textContent=nomsParcours[i]+' : '+(v===null?'À découvrir':v+' / 100')+' · '+d.counts[i]+' décisions évaluées';el.append(p);});const p=document.createElement('p');p.textContent='Objectif : au moins 30 parties, 40 décisions par pilier et 75/100 dans chacun. Portrait ludique, pas un test psychologique.';el.append(p);document.getElementById('personal-journey').showModal();});
