@@ -35,7 +35,16 @@ export function valeursApres(values,situation,choix){
  const effects=SITUATIONS[situation][3][choix][2], q=qualiteChoix(situation,choix);
  return values.map((v,i)=>{
    let direct=clamp(v+effects[i],0,100);
-   if(q===0)return direct;
+   if(q===0){
+     // Une mauvaise décision diffuse une tension sur les quatre piliers.
+     // Le pilier principal subit une pression supplémentaire plus forte.
+     const principal=i===focusOf(situation);
+     const pression=principal?9:3;
+     // La tension amplifie le déséquilibre existant. Un avantage immédiat
+     // peut subsister, mais les effets indirects ne le rendent pas meilleur.
+     const sens=direct>50?1:direct<50?-1:(effects[i]>0?1:-1);
+     return clamp(direct+sens*pression,0,100);
+   }
    // Les choix nuancés ont un petit effet transversal, sans garantie.
    if(q===1)return Math.round(direct+(clamp(direct,35,65)-direct)*0.20);
    // Une décision responsable conserve ses conséquences dans la zone,

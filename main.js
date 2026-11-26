@@ -4,8 +4,8 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=78';
-import { recordJourney, journeyStats, portrait } from './choix-simples.js?v=78';
+import { GameEngine } from './game-engine.js?v=79';
+import { recordJourney, journeyStats, portrait } from './choix-simples.js?v=79';
 import { SceneManager } from './scene-manager.js?v=76';
 import { UIController } from './ui-controller.js?v=77';
 import { AudioController } from './audio-controller.js';
