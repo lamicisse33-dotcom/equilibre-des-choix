@@ -1,4 +1,4 @@
-const VERSION = 'v85-source-harmonie';
+const VERSION = 'v86-icone';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -6,6 +6,8 @@ const CACHE_NAME = `equilibre-${VERSION}`;
 const CDN = ['unpkg.com', 'cdnjs.cloudflare.com', 'fonts.googleapis.com', 'fonts.gstatic.com', 'esm.sh'];
 
 const ASSETS = [
+  './assets/icons/equilibre-choix-v86.webp',
+  './manifest.json?v=86',
   './source-harmonie.js?v=85',
   './source-harmonie.css?v=85',
   './visuels-contextuels.js?v=83',

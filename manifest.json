@@ -1,12 +1,18 @@
 {
   "name": "ÉQUILIBRE DES CHOIX",
   "short_name": "ÉQUILIBRE",
-  "description": "Chaque décision a des conséquences. Maintenez l'équilibre avec ÉQUILIBRE DES CHOIX.",
+  "description": "Une invention originale de KHALAM : un jeu de décisions, de suspense et d’harmonie.",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#030303",
   "theme_color": "#c5a059",
   "icons": [
+    {
+      "src": "assets/icons/equilibre-choix-v86.webp",
+      "sizes": "128x128",
+      "type": "image/webp",
+      "purpose": "any"
+    },
     {
       "src": "assets/icons/icon-192.png",
       "sizes": "192x192",
