@@ -1465,6 +1465,32 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
 @media(max-height:500px){#situation-simple{top:52px;width:62vw}.parchemin-feuille{padding:5px 15px}.parchemin-kicker{display:none}#situation-titre{font-size:13px;margin:1px}#situation-texte{font-size:10px}#situation-lecture{margin-top:1px}}
 @media(prefers-reduced-motion:reduce){#situation-simple.ouverture .parchemin-feuille{animation:none}}
 </style>
+<style>
+/* Bilan du parcours : mise en page naturelle, sans compression des blocs. */
+#game-over.bilan-choix {justify-content:flex-start;gap:12px;box-sizing:border-box;padding:clamp(20px,4vh,40px) 16px 32px;overflow-y:auto;overflow-x:hidden;}
+#game-over.bilan-choix > * {flex-shrink:0;}
+#game-over.bilan-choix h2 {font-size:clamp(1.45rem,4vw,2.65rem);letter-spacing:.12em;margin:0;}
+#game-over.bilan-choix > p {margin:0;max-width:680px;line-height:1.5;}
+#game-over.bilan-choix .actions-row {margin-top:8px;max-width:100%;}
+#game-over.bilan-choix #game-over-banner {margin-bottom:0!important;}
+#game-over #miroir-resultat {width:min(100%,640px);max-width:640px;margin:8px auto;padding:clamp(16px,3vw,26px);text-align:left;border:1px solid #c5a05955;border-radius:16px;background:linear-gradient(145deg,#182322,#0c1518);color:#eee6d5;box-shadow:0 12px 34px #0003;}
+#miroir-resultat[hidden]{display:none!important;}
+#miroir-resultat .bilan-head{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap;}
+#miroir-resultat h3{font-family:var(--font-serif);font-size:clamp(1.15rem,3vw,1.6rem);font-weight:600;color:#f0ddad;margin:0;}
+#miroir-resultat .bilan-profil{font-size:.78rem;letter-spacing:.08em;text-transform:uppercase;color:#e9c879;border:1px solid #c5a05955;border-radius:20px;padding:6px 12px;}
+#miroir-resultat .bilan-section{border-top:1px solid #c5a05926;margin-top:15px;padding-top:12px;}
+#miroir-resultat .bilan-label{font-size:.72rem;letter-spacing:.12em;text-transform:uppercase;color:#d7bd81;margin-bottom:8px;}
+#miroir-resultat .bilan-traits{display:flex;gap:6px 14px;flex-wrap:wrap;font-size:.85rem;line-height:1.5;}
+#miroir-resultat .bilan-grille{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:12px 20px;}
+#miroir-resultat .bilan-ligne{display:flex;justify-content:space-between;gap:8px;font-size:.79rem;margin-bottom:5px;}
+#miroir-resultat .bilan-jauge{height:4px;background:#ffffff12;border-radius:6px;overflow:hidden;}
+#miroir-resultat .bilan-jauge span{display:block;height:100%;border-radius:6px;}
+#miroir-resultat .bilan-defi{font-family:var(--font-serif);color:#f0ddad;font-size:1.15rem;}
+#miroir-resultat .bilan-note{display:block;margin-top:14px;font-size:.72rem;line-height:1.5;color:#c8c4b9;}
+#game-over.bilan-choix #game-over-summary{max-width:640px;width:100%;max-height:none!important;overflow:visible!important;margin-top:4px!important;padding:12px 0 0;}
+#game-over.bilan-choix #game-over-summary:empty{display:none;}
+@media(max-width:420px){#miroir-resultat .bilan-grille{gap:10px;}#miroir-resultat .bilan-ligne{font-size:.72rem;}#game-over.bilan-choix .actions-row{gap:8px;}#game-over.bilan-choix #restart-btn{padding:12px 20px;}}
+</style>
 </head>
 <body>
 
@@ -1945,7 +1971,7 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
         </div>
 
         <div id="victory-rank" class="hidden"></div>
-        <div id="miroir-resultat" hidden style="max-width:560px;width:90%;text-align:left;margin:12px auto;padding:12px;border:1px solid #c5a05966;border-radius:12px;color:#f0ddad"></div>
+        <div id="miroir-resultat" hidden></div>
         <div id="game-over-summary" style="margin-top: 18px; max-height: 190px; overflow-y: auto; font-size: 0.78rem; color: rgba(255,255,255,0.62); border-top: 1px solid rgba(197,160,89,0.2); text-align: left;">
             <!-- Summary of the life lived will be injected here -->
         </div>
@@ -2014,7 +2040,7 @@ body.choix-simples #harmony-badge,body.choix-simples #harmony-streak,body.choix-
 
     <script type="module">
         if (new URLSearchParams(location.search).get('vue') !== 'strategie') {
-            import('./main.js?v=76');
+            import('./main.js?v=77');
         } else {
             import('./strategy-ui.js?v=69');
         }

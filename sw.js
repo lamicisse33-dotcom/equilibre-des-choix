@@ -1,4 +1,4 @@
-const VERSION = 'v76-visuel-sobre';
+const VERSION = 'v77-bilan';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
@@ -37,6 +37,8 @@ const ASSETS = [
   './table-controller.js',
   './transition-controller.js',
   './ui-controller.js',
+  './ui-controller.js?v=77',
+  './main.js?v=77',
   './vfx-controller.js',
   './assets/card-back-texture-v2.webp',
   './assets/card-back-texture.webp',

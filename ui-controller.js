@@ -1085,12 +1085,53 @@ export class UIController {
                     t('victoire_rang').replace('{titre}', titre);
             }
         }
+        this.elements.gameOver?.classList.toggle('bilan-choix', !!gameState.choixSimples);
+        this.elements.gameOver.scrollTop = 0;
         const miroir=document.getElementById('miroir-resultat');if(miroir){miroir.hidden=!gameState.choixSimples;miroir.replaceChildren();}
         if(gameState.choixSimples){
             const zone=gameState.pilliersEnZone();
-            if(miroir&&gameState.miroir){const m=gameState.miroir,d=gameState.parcoursPersonnel;const title=document.createElement('h3');title.textContent='Le miroir de vos choix — '+m.dominant;miroir.append(title);const p=document.createElement('p');p.textContent='Tendances de cette partie : '+Object.entries(m.traits).map(([k,v])=>k+' ('+v+')').join(', ')+'. Essaie de trouver ton équilibre.';miroir.append(p);if(d){const names=['Spiritualité','Amour','Santé','Argent'];const line=document.createElement('p');line.textContent='Parcours : '+d.games+' parties · '+d.scores.map((v,i)=>names[i]+' '+(v===null?'—':v+'/100')).join(' · ');miroir.append(line);const known=d.scores.map((v,i)=>({v,i})).filter(x=>x.v!==null).sort((a,b)=>a.v-b.v);const q=document.createElement('p');q.textContent=d.master?'Maître de l’équilibre !':known.length?'Prochain défi : '+names[known[0].i]+'.':'Continue à découvrir tes choix.';miroir.append(q);}const note=document.createElement('small');note.textContent='Interprétation ludique des décisions, pas un jugement de personnalité.';miroir.append(note);}
+            if (miroir && gameState.miroir) {
+                const m = gameState.miroir, d = gameState.parcoursPersonnel;
+                const el = (parent, tag, cls, value) => {
+                    const node = document.createElement(tag);
+                    node.className = cls;
+                    if (value != null) node.textContent = value;
+                    parent.append(node);
+                    return node;
+                };
+                const head = el(miroir, 'div', 'bilan-head');
+                el(head, 'h3', '', 'Le miroir de vos choix');
+                el(head, 'span', 'bilan-profil', m.dominant);
+                const tendances = el(miroir, 'section', 'bilan-section');
+                el(tendances, 'div', 'bilan-label', 'Tendances de cette partie');
+                const traits = el(tendances, 'div', 'bilan-traits');
+                for (const [k,v] of Object.entries(m.traits)) el(traits, 'span', '', k.charAt(0).toUpperCase()+k.slice(1)+' · '+v);
+                if (d) {
+                    const names = ['Spiritualité','Amour','Santé','Argent'];
+                    const colors = ['#a99bef','#ef8c9e','#74d7ad','#e5bc69'];
+                    const parcours = el(miroir, 'section', 'bilan-section');
+                    el(parcours, 'div', 'bilan-label', 'Votre parcours · '+d.games+' partie'+(d.games===1?'':'s'));
+                    const grid = el(parcours, 'div', 'bilan-grille');
+                    d.scores.forEach((v,i) => {
+                        const item = el(grid, 'div', '');
+                        const line = el(item, 'div', 'bilan-ligne');
+                        el(line,'span','',names[i]);
+                        el(line,'strong','',v===null?'—':v+'/100');
+                        const bar = el(item,'div','bilan-jauge');
+                        bar.setAttribute('aria-hidden','true');
+                        const fill = el(bar,'span','');
+                        fill.style.width = Math.max(0,Math.min(100,v??0))+'%';
+                        fill.style.background = colors[i];
+                    });
+                    const known = d.scores.map((v,i)=>({v,i})).filter(x=>x.v!==null).sort((a,b)=>a.v-b.v);
+                    const next = el(miroir,'section','bilan-section');
+                    el(next,'div','bilan-label','Prochain défi');
+                    el(next,'div','bilan-defi',d.master?'Maître de l’équilibre !':known.length?names[known[0].i]:'Continuez à découvrir vos choix.');
+                }
+                el(miroir,'small','bilan-note','Interprétation ludique des décisions, pas un jugement de personnalité.');
+            }
             if(this.elements.gameOverTitle)this.elements.gameOverTitle.textContent=zone===4?'Un bel équilibre':'Un équilibre à renforcer';
-            if(this.elements.gameOverDesc)this.elements.gameOverDesc.textContent='Dix décisions terminées. '+zone+' piliers sur 4 entre 35 et 65. Votre équilibre : '+gameState.score+' / 100.';
+            if(this.elements.gameOverDesc)this.elements.gameOverDesc.textContent='Dix décisions terminées. '+zone+(zone===1?' pilier':' piliers')+' sur 4 entre 35 et 65. Votre équilibre : '+gameState.score+' / 100.';
             if(this.elements.gameOverBanner)this.elements.gameOverBanner.textContent='BILAN DE VOS DÉCISIONS';
             this.elements.gameOverCause?.classList.add('hidden');
             this.elements.victoryTitle?.classList.add('hidden');
