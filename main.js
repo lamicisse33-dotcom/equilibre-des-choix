@@ -4,10 +4,10 @@
  */
 
 import { createEngine } from './strategy-mode.js?v=70';
-import { GameEngine } from './game-engine.js?v=79';
-import { recordJourney, journeyStats, portrait } from './choix-simples.js?v=79';
-import { SceneManager } from './scene-manager.js?v=76';
-import { UIController } from './ui-controller.js?v=77';
+import { GameEngine } from './game-engine.js?v=80';
+import { recordJourney, journeyStats, portrait, explicationChoix } from './choix-simples.js?v=80';
+import { SceneManager } from './scene-manager.js?v=80';
+import { UIController } from './ui-controller.js?v=80';
 import { AudioController } from './audio-controller.js';
 import { HomeController } from './home-controller.js?v=72';
 import { PersistenceController } from './persistence-controller.js?v=70';
@@ -888,6 +888,7 @@ class App {
         this.isProcessing = true;
 
         this.engine.applyCard(data);
+        if(this.engine.choixSimples){const h=this.engine.choixSimples.history.at(-1);if(h){const e=document.getElementById('retour-decision');e.textContent=explicationChoix(h.situation,h.choice);e.hidden=false;clearTimeout(this._retourDecisionTimer);this._retourDecisionTimer=setTimeout(()=>{e.hidden=true;},6500);}}
         if(!this.engine.choixSimples)this.narrative.onCardPlayed(data);
         this.scene.resetCamera();
         this.audio.refreshActiveVolumes(false, this.engine.turn);

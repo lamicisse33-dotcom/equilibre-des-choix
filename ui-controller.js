@@ -621,6 +621,7 @@ export class UIController {
      * Les signes sont enonces en toutes lettres, un "+" ne se prononce pas.
      */
     effetsEnMots(data) {
+        if(data.hiddenEffects)return '';
         const effets = data.effectsPerTurn || data.effects;
         if (!effets) return '';
         const t = (k) => this.callbacks.getTranslation(k);
@@ -884,7 +885,7 @@ export class UIController {
         }
         if (this.elements.cardDesc) this.elements.cardDesc.textContent = data.desc;
         
-        let effectsHtml = '';
+        let effectsHtml = data.hiddenEffects ? '<div class="forecast-summary">Les conséquences seront révélées après votre décision.</div>' : '';
 
         // Show Mechanic Badge if exists
         if (data.specialEffect) {
@@ -909,7 +910,7 @@ export class UIController {
         }
 
         // Show instant effects
-        for (const pillar in data.effects) {
+        for (const pillar in (data.hiddenEffects?{}:data.effects)) {
             const val = data.effects[pillar];
             if (val === 0) continue;
             const color = val >= 0 ? '#2ecc71' : '#e74c3c';

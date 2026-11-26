@@ -607,6 +607,7 @@ export class CardController {
      * colored per pillar with clear + / - signs.
      */
     drawEffects(ctx, data, W, y) {
+        if(data.hiddenEffects){ctx.save();ctx.font='600 24px Montserrat, sans-serif';ctx.textAlign='center';ctx.fillStyle='#d8c9a5';ctx.fillText('CONSÉQUENCES À DÉCOUVRIR',W/2,y+44);ctx.restore();return;}
         const effects = data.effects || {};
         const entries = [];
 
