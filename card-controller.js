@@ -390,6 +390,9 @@ export class CardController {
             artTexture = this.textures.illustrations.harmony;
         }
 
+        const portrait = this.textures.portraits?.[data.portraitKey];
+        const estPortrait = !!portrait?.image?.width;
+        if (estPortrait) artTexture = portrait;
         if (artTexture && artTexture.image) {
             const img = artTexture.image;
             const ratio = img.width / img.height;
@@ -404,10 +407,11 @@ export class CardController {
             const dx = artX + (artW - dw) / 2;
             // Cadrage sur le haut de l'image plutot que sur son centre : les
             // sujets de ces illustrations sont hauts (arbre, lotus, silhouette).
-            const dy = artY + (artH - dh) * 0.35;
+            const dy = artY + (artH - dh) * (estPortrait ? 0.12 : 0.35);
             ctx.globalAlpha = 0.96;
             ctx.drawImage(img, dx, dy, dw, dh);
             ctx.globalAlpha = 1;
+            if (estPortrait) { ctx.save(); ctx.globalAlpha=.07;ctx.fillStyle=cardColor;ctx.fillRect(artX,artY,artW,artH);ctx.restore(); }
         }
         const artFade = ctx.createLinearGradient(0, artY + artH - 70, 0, artY + artH);
         artFade.addColorStop(0, 'rgba(0,0,0,0)');

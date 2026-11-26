@@ -3,7 +3,8 @@ import { frameCards } from './immersive-layout.js?v=73';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 import TWEEN from 'three/addons/libs/tween.module.js';
 import { TableController } from './table-controller.js';
-import { CardController } from './card-controller.js?v=70';
+import { CardController } from './card-controller.js?v=75';
+import { PORTRAITS } from './personnages.js?v=75';
 import { VFXController } from './vfx-controller.js';
 
 export class SceneManager {
@@ -326,6 +327,7 @@ export class SceneManager {
             wood: this.textureLoader.load('assets/noble-wood-texture.webp'),
             border: this.textureLoader.load('assets/gold-engraved-border.webp'),
             cardBack: this.textureLoader.load('assets/card-back-texture-v2.webp'),
+            portraits: Object.fromEntries(PORTRAITS.map(n => [n,this.textureLoader.load('assets/personnages/'+n+'.webp')])),
             illustrations: {
                 spirituality: this.textureLoader.load('assets/spirituality_art.webp'),
                 love: this.textureLoader.load('assets/love_art.webp'),
