@@ -1,4 +1,4 @@
-const VERSION = 'v88-dilemmes-courts';
+const VERSION = 'v89-destin-bourse';
 const CACHE_NAME = `equilibre-${VERSION}`;
 
 // Dependances distantes : mises en cache a la volee, jamais en precache
