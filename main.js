@@ -18,6 +18,39 @@ import { NarrativeController } from './narrative-controller.js';
 import { TransitionController } from './transition-controller.js';
 import { DuelController } from './duel-controller.js?v=70';
 
+
+/* Cinématiques vectorielles légères : aucun téléchargement vidéo. */
+function jouerVision(echo,audio,done){
+ const t=echo.titre.toLowerCase(),v=echo.texte.toLowerCase(),good=echo.nature==='positive';
+ const type=/coffre/.test(t)?'coffre':/semences/.test(t)?'recolte':/allié silencieux/.test(t)?'operation':/maison du serment/.test(t)?'maison':/vent soudain/.test(t)?'tempete':/puissance instable|réparation invisible|congélateur/.test(t)?'panne':/promotion/.test(v)?'promotion':/réconciliation|pardon|dialogue reprend/.test(v)?'lien':/contrat|commande|trésorerie|revenu|dette/.test(v)?'argent':'destin';
+ const reduced=matchMedia('(prefers-reduced-motion: reduce)').matches;
+ const d=document.createElement('dialog');d.setAttribute('aria-label','Vision du destin');d.style.cssText='position:fixed;inset:0;margin:0;width:100%;height:100%;max-width:none;max-height:none;border:0;padding:0;background:#070a13;color:#f5d99a;overflow:hidden';
+ const c=document.createElement('canvas');c.style.cssText='width:100%;height:100%;display:block';d.append(c);
+ const label=document.createElement('div');label.style.cssText='position:absolute;top:8%;left:5%;right:5%;text-align:center;font:600 clamp(18px,4vw,36px) Georgia;letter-spacing:.08em;text-shadow:0 2px 12px #000';label.textContent='LES ÉCHOS DU DESTIN';d.append(label);
+ const skip=document.createElement('button');skip.textContent='Passer';skip.style.cssText='position:absolute;bottom:5%;right:5%;padding:10px 22px;border:1px solid #bfa36b;border-radius:20px;background:#111c26;color:#f5d99a';d.append(skip);document.body.append(d);
+ let frame=0,timer=0,finished=false,ctxAudio=null;const finish=()=>{if(finished)return;finished=true;cancelAnimationFrame(frame);clearTimeout(timer);try{ctxAudio?.close().catch(()=>{});}catch{}d.remove();done();};skip.onclick=finish;d.addEventListener('cancel',e=>{e.preventDefault();finish();});d.addEventListener('close',finish,{once:true});
+ try{d.showModal();}catch{finish();return;}
+ const W=c.width=640,H=c.height=Math.max(320,Math.min(640,Math.round(640*innerHeight/innerWidth))),x=W/2,y=H*.54,g=c.getContext('2d');if(!g){finish();return;}
+ const particles=Array.from({length:48},(_,i)=>({a:i*2.39996,r:30+(i*37%180),s:1+i%4}));
+ const color=good?'#7fe7c4':'#ffac62';const chest=type==='coffre',blast=chest&&/éclate/.test(v)&&!/sécuriser/.test(v);
+ function sound(){try{const vol=Math.min(.2,.20*(audio.settings?.sfx??1)*(audio.settings?.master??1));if(!vol)return;const AC=window.AudioContext||window.webkitAudioContext;if(!AC)return;ctxAudio=new AC();ctxAudio.resume().catch(()=>{});const now=ctxAudio.currentTime;const gain=ctxAudio.createGain();gain.connect(ctxAudio.destination);gain.gain.setValueAtTime(vol,now);gain.gain.exponentialRampToValueAtTime(.001,now+1.5);if(blast||type==='tempete'||type==='panne'||type==='maison'){const buf=ctxAudio.createBuffer(1,ctxAudio.sampleRate*1.5,ctxAudio.sampleRate),a=buf.getChannelData(0);let last=0;for(let i=0;i<a.length;i++){last=.9*last+.1*(Math.random()*2-1);a[i]=last*Math.exp(-i/a.length*3)*2;}const n=ctxAudio.createBufferSource();n.buffer=buf;n.connect(gain);n.start();}else{[0,good?7:3,good?12:6].forEach((note,i)=>{const o=ctxAudio.createOscillator();o.type='sine';o.frequency.value=196*Math.pow(2,note/12);o.connect(gain);o.start(now+i*.13);o.stop(now+1.4);});}}catch{}}
+ let sounded=false;const start=performance.now();
+ function draw(now){const p=Math.min(1,(now-start)/3000),q=reduced?1:p;if(!sounded&&p>.3){sounded=true;sound();}
+ g.fillStyle='#080b15';g.fillRect(0,0,W,H);const glow=g.createRadialGradient(x,y,5,x,y,W*.65);glow.addColorStop(0,good?'#174b42':'#4a231e');glow.addColorStop(1,'#080b15');g.fillStyle=glow;g.fillRect(0,0,W,H);
+ g.save();g.translate(x,y);g.strokeStyle=color;g.lineWidth=2;g.globalAlpha=.45;g.beginPath();g.ellipse(0,80,100+q*85,24+q*20,0,0,7);g.stroke();g.globalAlpha=1;
+ if(chest){g.fillStyle='#51351e';g.strokeStyle='#e4ba70';g.lineWidth=4;g.fillRect(-75,-32,150,95);g.strokeRect(-75,-32,150,95);g.save();g.translate(-75,-32);g.rotate(blast? -Math.min(1,Math.max(0,q-.32)*3):0);g.fillStyle='#72502b';g.beginPath();g.roundRect(0,-45,150,48,15);g.fill();g.stroke();g.restore();g.fillStyle='#eac47c';g.fillRect(-8,-30,16,28);}
+ else if(type==='recolte'){for(let i=0;i<16;i++){const h=good?10+q*(30+i%5*8):Math.max(3,(55+i%5*6)*(1-q));const xx=-120+i*16;g.strokeStyle=good?'#99d78a':'#a98751';g.beginPath();g.moveTo(xx,70);g.lineTo(xx,70-h);g.stroke();g.fillStyle=g.strokeStyle;g.beginPath();g.ellipse(xx,70-h,5,11,.4,0,7);g.fill();}}
+ else if(type==='maison'){g.fillStyle='#594c42';g.fillRect(-75,-15,150,90);g.strokeStyle='#d5b78c';g.strokeRect(-75,-15,150,90);g.beginPath();g.moveTo(-95,-15);g.lineTo(0,-95);g.lineTo(95,-15);g.closePath();g.stroke();if(!good){g.strokeStyle='#eec18e';g.beginPath();g.moveTo(0,-15);g.lineTo(-14,10*q);g.lineTo(12,35*q);g.lineTo(-9,73*q);g.stroke();}}
+ else if(type==='tempete'){for(let j=0;j<5;j++){g.strokeStyle='#7ccce8';g.beginPath();for(let i=-180;i<=180;i+=6){const yy=30+j*13+Math.sin(i*.035+q*9+j)*10;(i===-180?g.moveTo(i,yy):g.lineTo(i,yy));}g.stroke();}g.fillStyle='#d6bb82';g.beginPath();g.moveTo(-45,10);g.lineTo(48,10);g.lineTo(30,37);g.lineTo(-29,37);g.closePath();g.fill();g.beginPath();g.moveTo(0,4);g.lineTo(0,-83);g.lineTo(48,4);g.closePath();g.fill();}
+ else if(type==='argent'){for(let i=0;i<20;i++){let xx=(i*83%280)-140,yy=((i*37+q*180)%190)-95;if(!good)yy+=q*85;g.fillStyle='#dcb15e';g.globalAlpha=good?1:1-q*.8;g.beginPath();g.ellipse(xx,yy,11,6,.3,0,7);g.fill();}g.globalAlpha=1;}
+ else if(type==='lien'){for(let i of [-1,1]){const xx=i*(good?80-q*48:32+q*65);g.fillStyle='#bb916c';g.beginPath();g.arc(xx,-35,19,0,7);g.fill();g.beginPath();g.roundRect(xx-22,-10,44,75,12);g.fill();}g.strokeStyle=color;g.beginPath();g.moveTo(-45,5);g.lineTo(45,5);if(good)g.stroke();}
+ else {g.strokeStyle=color;g.lineWidth=3;g.strokeRect(-100,-62,200,118);g.beginPath();g.moveTo(-72,25);for(let i=0;i<7;i++)g.lineTo(-72+i*24,Math.sin(i*2+q*5)*25);g.stroke();g.font='bold 52px Georgia';g.fillStyle=color;g.textAlign='center';g.fillText(good?'✦':'!',0,8);}
+ for(const z of particles){const k=blast?Math.max(0,q-.30)*2.2:q;g.globalAlpha=(1-q*.65)*(blast?Math.min(1,k*4):.55);g.fillStyle=color;const rr=z.r*k;g.beginPath();g.arc(Math.cos(z.a)*rr,Math.sin(z.a)*rr*.65,z.s,0,7);g.fill();}g.restore();
+ if(p>.65){g.fillStyle='#f4dfb1';g.font='bold 24px Georgia';g.textAlign='center';g.fillText(chest?(blast?'COFFRE PIÉGÉ':'DANGER ÉVITÉ'):echo.titre.toUpperCase().slice(0,36),x,H*.86);}
+ if(p<1&&!finished)frame=requestAnimationFrame(draw);else if(!finished)timer=setTimeout(finish,450);
+ }frame=requestAnimationFrame(draw);timer=setTimeout(finish,4200);
+}
+
 class App {
     constructor() {
         // Initialize controllers
@@ -908,10 +941,7 @@ class App {
         const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
         ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const row=document.createElement('div');row.textContent=name+' : '+(echo.delta[i]>0?'+':'')+echo.delta[i];rows.append(row);});
         dialog.addEventListener('close',()=>{this.ui.arreterLecture();this.continuerApresSource();},{once:true});
-        this.audio.playSFX(echo.nature==='positive'?'harmony-sfx':'game-over-sfx',0.25);
-        dialog.showModal();
-        // La voix du destin respecte le réglage de lecture et le volume existants.
-        this.ui.lireDestin(echo.texte);
+        jouerVision(echo,this.audio,()=>{dialog.showModal();this.ui.lireDestin(echo.texte);});
     }
 
     confirmCard(data, mesh) {
