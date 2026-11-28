@@ -907,9 +907,11 @@ class App {
         dialog.querySelector('[data-echo-note]').textContent=echo.note;
         const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
         ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const row=document.createElement('div');row.textContent=name+' : '+(echo.delta[i]>0?'+':'')+echo.delta[i];rows.append(row);});
-        dialog.addEventListener('close',()=>this.continuerApresSource(),{once:true});
+        dialog.addEventListener('close',()=>{this.ui.arreterLecture();this.continuerApresSource();},{once:true});
         this.audio.playSFX(echo.nature==='positive'?'harmony-sfx':'game-over-sfx',0.25);
         dialog.showModal();
+        // La voix du destin respecte le réglage de lecture et le volume existants.
+        this.ui.lireDestin(echo.texte);
     }
 
     confirmCard(data, mesh) {
