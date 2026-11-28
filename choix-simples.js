@@ -10,7 +10,7 @@ const ECHOS={...{"51:0":[["Une exposition inattendue","Souvenez-vous de votre d�
 // Au plus un écho par partie, jamais sur les deux dernières décisions.
 function destinInitial(random){return {actif:true,hasard:random(),delai:random(),plan:null,joue:false,compte:0};}
 function ordreDestin(order,destin,random){if(!destin.actif)return order;const candidats=[48,49,50,...Array.from({length:10},(_,i)=>51+i)];const id=candidats[Math.floor(random()*candidats.length)];const o=order.filter(i=>i!==id);o.splice(Math.min(2,Math.floor(random()*3)),0,id);return o.slice(0,LENGTH);}
-function appliquerEcho(values,effets){return values.map((v,i)=>{const d=effets[i];if(d===0)return v;if(d>0)return Math.round(v+Math.sign(50-v)*Math.min(Math.abs(50-v),d));return clamp(v+(v>65?1:-1)*Math.abs(d),0,100);});}
+function appliquerEcho(values,effets){return values.map((v,i)=>{const d=effets[i];if(i===3)return clamp(v+d,0,100);if(d===0)return v;if(d>0)return Math.round(v+Math.sign(50-v)*Math.min(Math.abs(50-v),d));return clamp(v+(v>65?1:-1)*Math.abs(d),0,100);});}
 export function avancerDestin(g,situation,choix,values){
  const tour=g.history.length+1;let destin=g.destin?{...g.destin}:{actif:true,hasard:.5,delai:.5,plan:null,compte:0};let echo=null;
  const count=destin.compte??(destin.joue?1:0);destin.compte=count;destin.actif=true;
