@@ -557,7 +557,7 @@ export class UIController {
         // Titre, description, puis les points pilier par pilier. Sans les
         // chiffres, l'ecoute ne suffit pas a decider : ce sont eux qui portent
         // le choix.
-        const texte = data.destin ? data.desc : data.situation ? `${data.title}. ${data.desc || ''} Que décidez-vous ?` : `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
+        const texte = data.destin ? data.desc : data.situation ? `${data.title}. ${data.desc || ''}${/\?\s*$/.test(data.desc || '') ? '' : ' Que décidez-vous ?'}` : `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
         const u = new SpeechSynthesisUtterance(texte);
         u._situation=!!data.situation;
         u.lang = 'fr-FR';
