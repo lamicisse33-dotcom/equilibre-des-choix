@@ -534,6 +534,12 @@ export class UIController {
         this.lireCarte({title:titre,desc:texte,effects:{},situation:true});
     }
 
+    lireDestin(texte) {
+        this.arreterLecture();
+        this.lectureCoupee=false;
+        this.lireCarte({title:'Souvenez-vous',desc:texte,effects:{},destin:true,hiddenEffects:true});
+    }
+
     lireCarte(data) {
         if(!data?.situation && this.prioriteSituation)return;
         // Etat propre : le bouton ne reapparait qu'une fois la voix partie,
@@ -551,13 +557,13 @@ export class UIController {
         // Titre, description, puis les points pilier par pilier. Sans les
         // chiffres, l'ecoute ne suffit pas a decider : ce sont eux qui portent
         // le choix.
-        const texte = data.situation ? `${data.title}. ${data.desc || ''} Que décidez-vous ?` : `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
+        const texte = data.destin ? data.desc : data.situation ? `${data.title}. ${data.desc || ''} Que décidez-vous ?` : `${data.title}. ${data.desc || ''} ${this.effetsEnMots(data)}`;
         const u = new SpeechSynthesisUtterance(texte);
         u._situation=!!data.situation;
         u.lang = 'fr-FR';
         u.volume = volume;
-        u.rate = 1.0;
-        u.pitch = 1.0;
+        u.rate = data.destin ? 0.88 : 1.0;
+        u.pitch = data.destin ? 0.65 : 1.0;
 
         // Voix francaise si le systeme en propose une.
         // On n'impose pas d'objet voice : sur iOS la liste retournee par
@@ -569,7 +575,7 @@ export class UIController {
         if (!iOS) {
             const voix = (window.speechSynthesis.getVoices() || [])
                 .filter(v => v.lang && v.lang.toLowerCase().startsWith('fr'));
-            if (voix.length) u.voice = voix[0];
+            if (voix.length) u.voice = data.destin ? (voix.find(v=>/thomas|paul|henri|remy|rémy|male/i.test(v.name)) || voix[0]) : voix[0];
         }
 
         const synth = window.speechSynthesis;
