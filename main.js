@@ -47,6 +47,7 @@ function jouerVision(echo,audio,done){
  else {g.strokeStyle=color;g.lineWidth=3;g.strokeRect(-100,-62,200,118);g.beginPath();g.moveTo(-72,25);for(let i=0;i<7;i++)g.lineTo(-72+i*24,Math.sin(i*2+q*5)*25);g.stroke();g.font='bold 52px Georgia';g.fillStyle=color;g.textAlign='center';g.fillText(good?'✦':'!',0,8);}
  for(const z of particles){const k=blast?Math.max(0,q-.30)*2.2:q;g.globalAlpha=(1-q*.65)*(blast?Math.min(1,k*4):.55);g.fillStyle=color;const rr=z.r*k;g.beginPath();g.arc(Math.cos(z.a)*rr,Math.sin(z.a)*rr*.65,z.s,0,7);g.fill();}g.restore();
  if(p>.65){g.fillStyle='#f4dfb1';g.font='bold 24px Georgia';g.textAlign='center';g.fillText(chest?(blast?'COFFRE PIÉGÉ':'DANGER ÉVITÉ'):echo.titre.toUpperCase().slice(0,36),x,H*.86);}
+ if(p>.68&&echo.delta[3]!==0){const money=echo.delta[3];g.save();g.globalAlpha=Math.min(1,(p-.68)*10);g.font='bold 34px Georgia';g.textAlign='center';g.fillStyle=money>0?'#b7f4c4':'#ff998e';g.fillText((money>0?'+':'')+money+' ARGENT',x,H*.18);g.restore();}
  if(p<1&&!finished)frame=requestAnimationFrame(draw);else if(!finished)timer=setTimeout(finish,450);
  }frame=requestAnimationFrame(draw);timer=setTimeout(finish,4200);
 }
@@ -939,7 +940,7 @@ class App {
         dialog.querySelector('[data-echo-texte]').textContent=echo.texte;
         dialog.querySelector('[data-echo-note]').textContent=echo.note;
         const rows=dialog.querySelector('[data-echo-effets]');rows.replaceChildren();
-        ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const row=document.createElement('div');row.textContent=name+' : '+(echo.delta[i]>0?'+':'')+echo.delta[i];rows.append(row);});
+        ['Spiritualité','Amour','Santé','Argent'].forEach((name,i)=>{const delta=echo.delta[i];const row=document.createElement('div');row.textContent=(i===3?'Bourse':name)+' : '+(delta>0?'+':'')+delta;row.style.color=delta>0?'#9ce8bc':delta<0?'#ff998e':'#b9b5a9';if(i===3){row.style.fontWeight='700';row.style.fontSize='1.25em';row.style.padding='6px';}rows.append(row);});
         dialog.addEventListener('close',()=>{this.ui.arreterLecture();this.continuerApresSource();},{once:true});
         jouerVision(echo,this.audio,()=>{dialog.showModal();this.ui.lireDestin(echo.texte);});
     }
